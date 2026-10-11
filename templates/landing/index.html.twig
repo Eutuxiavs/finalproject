@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Yonzon | Claim Registry</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="{{ asset('css/yonzon.css') }}" rel="stylesheet">
+</head>
+<body>
+
+{# ============ NAV ============ #}
+<header class="nav">
+    <div class="wrap nav__inner">
+        <a href="{{ path('app_home') }}" class="brand">
+            <span class="brand__mark"><img src="{{ asset('images/logo.png') }}" alt="Yonzon logo"></span>
+            <span class="brand__text">YONZON</span>
+        </a>
+        <nav class="nav__links">
+            <a href="#certificate">Certificate</a>
+            <a href="#process">The Process</a>
+            <a href="#lost-found">Lost &amp; Found</a>
+            <a href="#system">The System</a>
+        </nav>
+        <div class="nav__cta">
+            <a href="{{ path('app_dashboard') }}" class="link">Log in</a>
+            <a href="{{ path('app_dashboard') }}" class="btn btn--primary btn--sm">Register an item</a>
+        </div>
+    </div>
+</header>
+
+{# ============ HERO ============ #}
+<section class="hero">
+    <div class="wrap hero__grid">
+        <div>
+            <span class="eyebrow">Ownership registry · Verified records</span>
+            <h1>Proof that it <em>belongs to you.</em></h1>
+            <p class="lead">
+                Register what you own, and Yonzon keeps the record: a verifiable claim,
+                a certificate, and a way for a stranger to reach you without ever
+                seeing your name.
+            </p>
+            <div class="hero__actions">
+                <a href="{{ path('app_dashboard') }}" class="btn btn--primary">Register your first item</a>
+                <a href="#certificate" class="btn btn--ghost">Read a certificate</a>
+            </div>
+        </div>
+
+        <div class="hero__art">
+            <div class="seal">
+                <div class="seal__ring"></div>
+                <div class="seal__core"><img src="{{ asset('images/logo.png') }}" alt="Yonzon logo"></div>
+            </div>
+            <div class="hero__chip hero__chip--a"><i class="bi bi-shield-check"></i> Verified owner</div>
+            <div class="hero__chip hero__chip--b"><i class="bi bi-qr-code"></i> QR issued instantly</div>
+        </div>
+    </div>
+</section>
+
+{# ============ CERTIFICATE ============ #}
+<section class="section" id="certificate">
+    <div class="wrap">
+        <div class="section__head section__head--center">
+            <span class="eyebrow">Specimen</span>
+            <h2>What a registered claim looks like</h2>
+        </div>
+
+        <article class="cert">
+            <div class="cert__bar">
+                <span class="brand brand--light">
+                    <span class="brand__mark"><img src="{{ asset('images/logo.png') }}" alt="Yonzon logo"></span>
+                    <span class="brand__text">YONZON</span>
+                </span>
+                <span class="cert__title">Certificate of Ownership</span>
+            </div>
+
+            <div class="cert__body">
+                <p class="cert__small">
+                    This certifies that the item described below has been recorded under a
+                    verified Yonzon account, with supporting proof of purchase held in confidence.
+                </p>
+                <h3 class="cert__item">Leica Camera M11</h3>
+
+                <dl class="cert__meta">
+                    <div><dt>Owner</dt><dd>Jayvee Yonzon</dd></div>
+                    <div><dt>Claim ID</dt><dd>YZ-CM11-00421</dd></div>
+                    <div><dt>Serial no.</dt><dd>•••••421</dd></div>
+                    <div><dt>Registered</dt><dd>12 Aug 2026</dd></div>
+                </dl>
+            </div>
+
+            <div class="cert__foot">
+                <div class="qr"><i class="bi bi-qr-code"></i></div>
+                <div class="cert__stamp">Verified</div>
+            </div>
+        </article>
+    </div>
+</section>
+
+{# ============ PROCESS ============ #}
+<section class="section section--sage" id="process">
+    <div class="wrap">
+        <div class="section__head">
+            <span class="eyebrow">Filing procedure</span>
+            <h2>Five entries make a record.</h2>
+            <p class="muted">The order is fixed on purpose. Each entry becomes evidence for the one after it.</p>
+        </div>
+
+        <ol class="steps">
+            {% for step in steps %}
+                <li class="step">
+                    <span class="step__num">{{ step[0] }}</span>
+                    <h3>{{ step[1] }}</h3>
+                    <p>{{ step[2] }}</p>
+                </li>
+            {% endfor %}
+        </ol>
+    </div>
+</section>
+
+{# ============ FILED ITEMS ============ #}
+<section class="section">
+    <div class="wrap">
+        <div class="section__head">
+            <span class="eyebrow">Registry</span>
+            <h2>A few things already filed with Yonzon.</h2>
+            <p class="muted">Real claims, real categories. Every item gets the same certificate, the same QR code, the same quiet protection.</p>
+        </div>
+
+        <div class="grid grid--3">
+            {% for item in items %}
+                <article class="card">
+                    <div class="card__top">
+                        <span class="card__icon"><i class="bi bi-box-seam"></i></span>
+                        <span class="badge badge--{{ item[4] }}">
+                            {{ item[4] == 'warranty' ? 'Warranty' : (item[4] == 'lost' ? 'Lost' : 'Owned') }}
+                        </span>
+                    </div>
+                    <span class="card__cat">{{ item[1] }}</span>
+                    <h3>{{ item[0] }}</h3>
+                    <div class="card__meta">
+                        <span>{{ item[2] }}</span>
+                        <span>Registered {{ item[3] }}</span>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# ============ LOST & FOUND ============ #}
+<section class="section section--ink" id="lost-found">
+    <div class="wrap split">
+        <div>
+            <span class="eyebrow eyebrow--light">If it's ever lost</span>
+            <h2>A stranger can reach you without ever knowing who you are.</h2>
+            <p class="lead lead--light">
+                Every registered item carries a claim ID and a QR code. Scan it, and
+                instead of a name, a phone number, or an address, a finder sees only a
+                status and a way to send word, routed through Yonzon, never through
+                your inbox directly.
+            </p>
+            <ul class="ticks">
+                <li><i class="bi bi-check2-circle"></i> Personal details never shown</li>
+                <li><i class="bi bi-check2-circle"></i> Messages relayed through Yonzon</li>
+                <li><i class="bi bi-check2-circle"></i> Status updates the moment it's reported lost</li>
+            </ul>
+        </div>
+
+        <aside class="scan">
+            <span class="scan__label">Scanned record</span>
+            <p class="scan__title"><i class="bi bi-patch-check-fill"></i> This item has a verified owner.</p>
+            <dl>
+                <div><dt>Claim ID</dt><dd>YZ-CM11-00421</dd></div>
+                <div><dt>Status</dt><dd><span class="badge badge--lost">Lost</span></dd></div>
+            </dl>
+            <a href="#" class="btn btn--accent btn--block">Contact owner</a>
+        </aside>
+    </div>
+</section>
+
+{# ============ SYSTEM / ROOMS ============ #}
+<section class="section" id="system">
+    <div class="wrap">
+        <div class="section__head">
+            <span class="eyebrow">Floor directory</span>
+            <h2>One record, five rooms to manage it in.</h2>
+        </div>
+
+        <div class="rooms">
+            {% for room in rooms %}
+                <a class="room" href="{{ room[4] ? path(room[4]) : '#' }}">
+                    <span class="room__icon"><i class="bi {{ room[0] }}"></i></span>
+                    <div class="room__text">
+                        <h3>{{ room[1] }}</h3>
+                        <p>{{ room[2] }}</p>
+                    </div>
+                    <span class="room__meta">{{ room[3] }}</span>
+                    <i class="bi bi-arrow-right room__arrow"></i>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# ============ CTA ============ #}
+<section class="cta">
+    <div class="wrap cta__inner">
+        <h2>Give what you own a record that outlasts the receipt.</h2>
+        <p>Five entries file your first claim. A lifetime to be glad you did.</p>
+        <a href="{{ path('app_dashboard') }}" class="btn btn--accent">Register an item</a>
+    </div>
+</section>
+
+{# ============ FOOTER ============ #}
+<footer class="footer">
+    <div class="wrap footer__grid">
+        <div>
+            <a href="{{ path('app_home') }}" class="brand brand--light">
+                <span class="brand__mark"><img src="{{ asset('images/logo.png') }}" alt="Yonzon logo"></span>
+                <span class="brand__text">YONZON</span>
+            </a>
+            <p class="footer__tag">A verified ownership registry for the things worth keeping track of.</p>
+        </div>
+        <div>
+            <h4>Registry</h4>
+            <a href="#certificate">Certificate</a>
+            <a href="#process">The Process</a>
+            <a href="#lost-found">Lost &amp; Found</a>
+        </div>
+        <div>
+            <h4>Company</h4>
+            <a href="#">About</a>
+            <a href="#">Contact</a>
+        </div>
+        <div>
+            <h4>Filed by</h4>
+            <p>Jayvee Yonzon<br><span class="muted-light">Framer &amp; Designer</span></p>
+        </div>
+    </div>
+    <div class="wrap footer__bottom">
+        © {{ 'now'|date('Y') }} Yonzon Claim Registry. All records reserved.
+    </div>
+</footer>
+
+</body>
+</html>

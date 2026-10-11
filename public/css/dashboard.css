@@ -1,0 +1,126 @@
+:root {
+    --sidebar-width: 250px;
+    --sidebar-collapsed-width: 78px;
+    --sidebar-bg: #0F3D3E;
+    --sidebar-text: #cfe0dc;
+    --sidebar-active: #B8893B;
+}
+
+body {
+    background-color: #F7F4EE;
+    min-height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    width: var(--sidebar-width);
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    transition: width 0.25s ease;
+    z-index: 1000;
+    overflow-x: hidden;
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 88px;
+    padding: 0 18px;
+    color: #fff;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    white-space: nowrap;
+}
+
+.sidebar-brand span {
+    font-family: 'Fraunces', serif;
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: .2em;
+    line-height: 1;
+}
+
+.sidebar-logo {
+    width: 46px;
+    height: 46px;
+    min-width: 46px;
+    padding: 0;
+    border-radius: 0;
+    background: none;
+    object-fit: contain;
+}
+
+.sidebar-nav .nav-link {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 24px;
+    color: var(--sidebar-text);
+    white-space: nowrap;
+    transition: background 0.2s, color 0.2s;
+}
+
+.sidebar-nav .nav-link i {
+    font-size: 1.15rem;
+}
+
+.sidebar-nav .nav-link:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.sidebar-nav .nav-link.active {
+    background: var(--sidebar-active);
+    color: #fff;
+}
+
+/* Main area */
+.main-wrapper {
+    margin-left: var(--sidebar-width);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left 0.25s ease;
+}
+
+.content {
+    flex: 1;
+}
+
+.topbar {
+    position: sticky;
+    top: 0;
+    z-index: 900;
+    height: 64px;
+}
+
+/* Collapsed sidebar */
+body.sidebar-collapsed .sidebar {
+    width: var(--sidebar-collapsed-width);
+}
+
+body.sidebar-collapsed .sidebar span {
+    display: none;
+}
+
+body.sidebar-collapsed .main-wrapper {
+    margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+    .sidebar {
+        width: var(--sidebar-collapsed-width);
+    }
+    .sidebar span {
+        display: none;
+    }
+    .main-wrapper {
+        margin-left: var(--sidebar-collapsed-width);
+    }
+}

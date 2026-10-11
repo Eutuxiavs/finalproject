@@ -1,0 +1,35 @@
+{% set route = app.request.attributes.get('_route') %}
+
+<aside class="sidebar" id="sidebar">
+    <a href="{{ path('app_home') }}" class="sidebar-brand">
+        <img src="{{ asset('images/logo.png') }}" alt="Yonzon logo" class="sidebar-logo">
+        <span>YONZON</span>
+    </a>
+
+    <ul class="nav flex-column sidebar-nav">
+        <li class="nav-item">
+            <a class="nav-link {{ route == 'app_dashboard' ? 'active' : '' }}" href="{{ path('app_dashboard') }}">
+                <i class="bi bi-house-door"></i>
+                <span>Dashboard</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ route == 'app_users' ? 'active' : '' }}" href="{{ path('app_users') }}">
+                <i class="bi bi-people"></i>
+                <span>Users</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ route == 'app_settings' ? 'active' : '' }}" href="{{ path('app_settings') }}">
+                <i class="bi bi-gear"></i>
+                <span>Settings</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ path('app_home') }}">
+                <i class="bi bi-box-arrow-up-right"></i>
+                <span>Landing Page</span>
+            </a>
+        </li>
+    </ul>
+</aside>

@@ -1,0 +1,33 @@
+<nav class="navbar topbar bg-white border-bottom px-3">
+    <div class="d-flex align-items-center">
+        <button class="btn btn-light me-3" id="sidebarToggle" type="button">
+            <i class="bi bi-list fs-5"></i>
+        </button>
+        <h5 class="mb-0">{{ page_title|default('Dashboard') }}</h5>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        <form class="d-none d-md-flex" role="search">
+            <input class="form-control form-control-sm" type="search" placeholder="Search...">
+        </form>
+
+        <a href="#" class="text-secondary position-relative">
+            <i class="bi bi-bell fs-5"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
+        </a>
+
+        <div class="dropdown">
+            <a class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark"
+               href="#" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle fs-4 me-2"></i>
+                <span class="d-none d-md-inline">Admin</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" href="#">Profile</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_settings') }}">Settings</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#">Logout</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
