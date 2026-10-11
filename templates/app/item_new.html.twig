@@ -1,0 +1,81 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Register an item | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Filing procedure</p>
+
+    <div class="page-head">
+        <h1>Register an item.</h1>
+        <a class="btn btn--ghost" href="{{ path('user_registry') }}">&larr; Back to registry</a>
+    </div>
+
+    {% if errors %}
+        <div class="flash flash--error">
+            <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="panel form">
+        <input type="hidden" name="_token" value="{{ csrf_token('item_new') }}">
+
+        <div class="form__row">
+            <div class="field">
+                <label for="name">Item name</label>
+                <input class="input" id="name" name="name" value="{{ data.name }}" placeholder="e.g. Leica Camera M11" maxlength="160" required>
+            </div>
+            <div class="field">
+                <label for="category">Category</label>
+                <select class="input" id="category" name="category" required>
+                    <option value="">Choose one</option>
+                    {% for c in categories %}
+                        <option value="{{ c }}" {{ data.category == c ? 'selected' }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form__row">
+            <div class="field">
+                <label for="serial">Serial number <em>(optional)</em></label>
+                <input class="input" id="serial" name="serial" value="{{ data.serial }}" placeholder="Kept private, never shown publicly" maxlength="120">
+            </div>
+            <div class="field">
+                <label for="condition">Condition <em>(optional)</em></label>
+                <select class="input" id="condition" name="condition">
+                    <option value="">Not specified</option>
+                    {% for c in conditions %}
+                        <option value="{{ c }}" {{ data.condition == c ? 'selected' }}>{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="city">City <em>(optional, helps local buyers find it)</em></label>
+            <input class="input" id="city" name="city" value="{{ data.city }}" placeholder="e.g. Cebu City" maxlength="120">
+        </div>
+
+        <div class="field">
+            <label for="notes">Notes <em>(optional)</em></label>
+            <textarea class="input" id="notes" name="notes" rows="4" maxlength="1000" placeholder="Purchase details, condition, anything worth recording.">{{ data.notes }}</textarea>
+        </div>
+
+        <div class="field">
+            <label for="photo">Photo <em>(optional, JPG, PNG or WEBP up to 5 MB)</em></label>
+            <label class="upload" for="photo">
+                <i class="bi bi-image"></i>
+                <span id="photoName">Click to upload a photo</span>
+            </label>
+            <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block">File this claim</button>
+    </form>
+
+    <script>
+        document.getElementById('photo').addEventListener('change', function () {
+            document.getElementById('photoName').textContent = this.files.length ? this.files[0].name : 'Click to upload a photo';
+        });
+    </script>
+{% endblock %}

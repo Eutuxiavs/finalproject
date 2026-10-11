@@ -8,15 +8,15 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class DashboardController extends AbstractController
 {
-    #[Route('/dashboard', name: 'app_dashboard')]
+    #[Route('/admin', name: 'app_dashboard')]
     public function index(): Response
     {
         return $this->render('dashboard/index.html.twig', [
-            'page_title' => 'Dashboard',
+            'page_title' => 'Admin Dashboard',
         ]);
     }
 
-    #[Route('/users', name: 'app_users')]
+    #[Route('/admin/users', name: 'app_users')]
     public function users(): Response
     {
         return $this->render('dashboard/users.html.twig', [
@@ -24,7 +24,7 @@ class DashboardController extends AbstractController
         ]);
     }
 
-    #[Route('/settings', name: 'app_settings')]
+    #[Route('/admin/settings', name: 'app_settings')]
     public function settings(): Response
     {
         return $this->render('dashboard/settings.html.twig', [

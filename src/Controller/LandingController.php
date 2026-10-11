@@ -28,7 +28,7 @@ class LandingController extends AbstractController
                 ['Air Jordan 1 Retro',  'Footwear',    'YZ-AJ1-00810',   '11 Mar 2026', 'owned'],
             ],
             'rooms' => [
-                ['bi-grid',                'Dashboard',     "An overview of everything you've filed, at a glance.",   '12 registered · 2 lost', 'app_dashboard'],
+                ['bi-grid',                'Dashboard',     "An overview of everything you've filed, at a glance.",   '12 registered · 2 lost', 'user_registry'],
                 ['bi-collection',          'My Claims',     'All your registered possessions, in one place.',         'Full list',              null],
                 ['bi-plus-square',         'Add Claim',     'Item, photos, serial, receipt, details.',                '5 steps',                null],
                 ['bi-file-earmark-text',   'Claim Details', 'The complete ownership record and its scannable code.',  'Record + QR',            null],

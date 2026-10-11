@@ -1,0 +1,74 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Your profile | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Filed under {{ app.user.email }}</p>
+    <h1>Your profile.</h1>
+
+    <div class="profile-head">
+        <div class="avatar">
+            {% if app.user.avatar %}
+                <img src="{{ asset(app.user.avatar) }}" alt="Profile picture">
+            {% else %}
+                <i class="bi bi-person"></i>
+            {% endif %}
+        </div>
+        <div>
+            <h2>{{ app.user.fullName }}</h2>
+            {% if app.user.business %}<p class="muted">{{ app.user.business }}</p>{% endif %}
+            <p class="eyebrow eyebrow--tight">{{ stats.filed }} filed · {{ stats.sale }} for sale · {{ stats.lost }} lost</p>
+        </div>
+    </div>
+
+    {% if errors %}
+        <div class="flash flash--error">
+            <ul>{% for error in errors %}<li>{{ error }}</li>{% endfor %}</ul>
+        </div>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="panel form form--narrow">
+        <input type="hidden" name="_token" value="{{ csrf_token('profile') }}">
+
+        <div class="field">
+            <label for="avatar">Profile picture <em>(optional)</em></label>
+            <label class="upload upload--round" for="avatar"><i class="bi bi-image"></i></label>
+            <input id="avatar" name="avatar" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+            <small class="muted" id="avatarName"></small>
+        </div>
+
+        <div class="form__row">
+            <div class="field">
+                <label for="fullName">Full name</label>
+                <input class="input" id="fullName" name="fullName" value="{{ app.user.fullName }}" maxlength="120" required>
+            </div>
+            <div class="field">
+                <label for="business">Business / related to <em>(optional)</em></label>
+                <input class="input" id="business" name="business" value="{{ app.user.business }}" placeholder="e.g. Yonzon Vintage Cameras" maxlength="160">
+            </div>
+        </div>
+
+        <div class="field">
+            <label for="bio">Bio <em>(optional)</em></label>
+            <textarea class="input" id="bio" name="bio" rows="4" maxlength="500" placeholder="A short line about you or what you collect/sell.">{{ app.user.bio }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn--primary btn--block">Save profile</button>
+    </form>
+
+    <details class="danger">
+        <summary>Delete my account</summary>
+        <form method="post" action="{{ path('profile_delete') }}" onsubmit="return confirm('This permanently deletes your account, items and offers. Continue?')">
+            <input type="hidden" name="_token" value="{{ csrf_token('profile_delete') }}">
+            <p class="muted">This removes your account, your registered items and your offers for good. Type your password to confirm.</p>
+            <input class="input" type="password" name="password" placeholder="Your password" required autocomplete="current-password">
+            <button class="btn btn--danger btn--sm" type="submit">Delete account permanently</button>
+        </form>
+    </details>
+
+    <script>
+        document.getElementById('avatar').addEventListener('change', function () {
+            document.getElementById('avatarName').textContent = this.files.length ? this.files[0].name : '';
+        });
+    </script>
+{% endblock %}

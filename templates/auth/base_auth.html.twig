@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Yonzon{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="{{ asset('css/auth.css') }}" rel="stylesheet">
+</head>
+<body>
+<div class="auth">
+    <aside class="auth__panel">
+        <a href="{{ path('app_home') }}" class="auth__brand">
+            <img src="{{ asset('images/logo.png') }}" alt="Yonzon logo">
+            <span>YONZON</span>
+        </a>
+
+        <div class="auth__pitch">
+            <span class="auth__eyebrow">Ownership registry</span>
+            <h2>Proof that it <em>belongs to you.</em></h2>
+            <p>Register what you own, and Yonzon keeps the record: a verifiable claim, a certificate, and a way for a stranger to reach you without ever seeing your name.</p>
+        </div>
+
+        <small class="auth__copy">&copy; {{ 'now'|date('Y') }} Yonzon Claim Registry</small>
+    </aside>
+
+    <main class="auth__main">
+        <div class="auth__card">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+</div>
+</body>
+</html>

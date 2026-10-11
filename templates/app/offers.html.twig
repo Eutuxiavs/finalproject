@@ -1,0 +1,41 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Offers | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Buying, selling, and trading, safely</p>
+    <h1>Offers.</h1>
+
+    <div class="note">
+        <strong>How this stays safe:</strong> accepting an offer doesn't transfer anything by itself.
+        Ownership only moves once <strong>both</strong> sides separately click "Confirm handover complete",
+        meaning after the exchange actually happened. Neither side can force a transfer alone, and either
+        side can cancel before that point. Meet in a safe public place for in-person handoffs, and never
+        send payment before agreeing on the method with the other person.
+    </div>
+
+    <h2 class="section-title"><span>As the seller</span>Offers you've received</h2>
+    {% if received is empty %}
+        <div class="empty"><p>No one has made an offer on your items yet.</p></div>
+    {% else %}
+        <div class="stack">
+            {% for offer in received %}
+                {% include 'app/_offer_row.html.twig' with {offer: offer, role: 'seller'} %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h2 class="section-title"><span>As the buyer</span>Offers you've made</h2>
+    {% if made is empty %}
+        <div class="empty">
+            <p>You haven't made any offers yet.</p>
+            <a class="btn btn--ghost" href="{{ path('marketplace') }}">Browse the marketplace</a>
+        </div>
+    {% else %}
+        <div class="stack">
+            {% for offer in made %}
+                {% include 'app/_offer_row.html.twig' with {offer: offer, role: 'buyer'} %}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

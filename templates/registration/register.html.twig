@@ -1,0 +1,44 @@
+{% extends 'auth/base_auth.html.twig' %}
+
+{% block title %}Register | Yonzon{% endblock %}
+
+{% block content %}
+    <h1>Create your account</h1>
+    <p class="auth__sub">Start registering what you own.</p>
+
+    {{ form_start(registrationForm, {attr: {class: 'auth-form', novalidate: 'novalidate'}}) }}
+
+        {{ form_errors(registrationForm) }}
+
+        <div class="field">
+            <label for="{{ registrationForm.fullName.vars.id }}">Full name</label>
+            {{ form_widget(registrationForm.fullName, {attr: {class: 'field__input', placeholder: 'Jayvee Yonzon', autocomplete: 'name'}}) }}
+            {{ form_errors(registrationForm.fullName) }}
+        </div>
+
+        <div class="field">
+            <label for="{{ registrationForm.email.vars.id }}">Email</label>
+            {{ form_widget(registrationForm.email, {attr: {class: 'field__input', placeholder: 'you@example.com', autocomplete: 'email'}}) }}
+            {{ form_errors(registrationForm.email) }}
+        </div>
+
+        <div class="field">
+            <label for="{{ registrationForm.plainPassword.first.vars.id }}">Password</label>
+            {{ form_widget(registrationForm.plainPassword.first, {attr: {class: 'field__input', placeholder: 'At least 8 characters'}}) }}
+            {{ form_errors(registrationForm.plainPassword.first) }}
+            {{ form_errors(registrationForm.plainPassword) }}
+        </div>
+
+        <div class="field">
+            <label for="{{ registrationForm.plainPassword.second.vars.id }}">Confirm password</label>
+            {{ form_widget(registrationForm.plainPassword.second, {attr: {class: 'field__input', placeholder: 'Repeat your password'}}) }}
+            {{ form_errors(registrationForm.plainPassword.second) }}
+        </div>
+
+        <button type="submit" class="btn-auth">Create account</button>
+
+    {{ form_end(registrationForm) }}
+
+    <p class="auth__switch">Already have an account? <a href="{{ path('app_login') }}">Log in</a></p>
+    <p class="auth__switch"><a href="{{ path('app_home') }}">&larr; Back to home</a></p>
+{% endblock %}

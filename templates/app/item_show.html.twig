@@ -1,0 +1,109 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}{{ item.name }} | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Claim {{ item.claimId }}</p>
+
+    <div class="page-head">
+        <h1>{{ item.name }}</h1>
+        <a class="btn btn--ghost" href="{{ path('user_registry') }}">&larr; Back to registry</a>
+    </div>
+
+    <div class="split">
+        <section class="panel">
+            <div class="detail__img">
+                {% if item.photo %}
+                    <img src="{{ asset(item.photo) }}" alt="{{ item.name }}">
+                {% else %}
+                    <i class="bi bi-image"></i>
+                {% endif %}
+            </div>
+
+            <dl class="details">
+                <div><dt>Category</dt><dd>{{ item.category }}</dd></div>
+                <div><dt>Claim ID</dt><dd>{{ item.claimId }}</dd></div>
+                <div><dt>Serial number <small>(only you can see this)</small></dt><dd>{{ item.serialNumber ?: '—' }}</dd></div>
+                <div><dt>Condition</dt><dd>{{ item.itemCondition ?: '—' }}</dd></div>
+                <div><dt>City</dt><dd>{{ item.city ?: '—' }}</dd></div>
+                <div><dt>Registered</dt><dd>{{ item.createdAt|date('d M Y') }}</dd></div>
+                <div><dt>Notes</dt><dd>{{ item.notes ?: '—' }}</dd></div>
+            </dl>
+        </section>
+
+        <aside class="stack">
+            <section class="panel">
+                <h2>Status</h2>
+                <p>
+                    <span class="badge badge--{{ item.status }}">
+                        {{ item.status == 'for_sale' ? 'For sale' : (item.status == 'lost' ? 'Lost' : 'Owned') }}
+                    </span>
+                    {% if item.status == 'for_sale' and item.price %}
+                        <strong class="inline-price">${{ item.price|number_format(2) }}</strong>
+                    {% endif %}
+                </p>
+
+                {% set token = csrf_token('item_' ~ item.id) %}
+                {% set updateUrl = path('item_update', {id: item.id}) %}
+
+                {% if item.status == 'owned' %}
+                    <form method="post" action="{{ updateUrl }}" class="action">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="sell">
+                        <label>List for sale ($)</label>
+                        <input class="input" type="number" name="price" min="1" step="0.01" placeholder="Asking price" required>
+                        <button class="btn btn--primary btn--sm btn--block" type="submit">List on marketplace</button>
+                    </form>
+                    <form method="post" action="{{ updateUrl }}" class="action">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="lost">
+                        <button class="btn btn--ghost btn--sm btn--block" type="submit">Report lost</button>
+                    </form>
+                {% elseif item.status == 'for_sale' %}
+                    <form method="post" action="{{ updateUrl }}" class="action">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="unlist">
+                        <button class="btn btn--ghost btn--sm btn--block" type="submit">Take off marketplace</button>
+                    </form>
+                    <form method="post" action="{{ updateUrl }}" class="action">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="lost">
+                        <button class="btn btn--ghost btn--sm btn--block" type="submit">Report lost</button>
+                    </form>
+                {% else %}
+                    <form method="post" action="{{ updateUrl }}" class="action">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="found">
+                        <button class="btn btn--primary btn--sm btn--block" type="submit">I found it</button>
+                    </form>
+                {% endif %}
+
+                <form method="post" action="{{ updateUrl }}" class="action" onsubmit="return confirm('Delete this claim for good?')">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <input type="hidden" name="action" value="delete">
+                    <button class="link-danger" type="submit">Delete this claim</button>
+                </form>
+            </section>
+
+            {% if item.status == 'for_sale' %}
+                <section class="panel">
+                    <h2>Offers on this item</h2>
+                    {% if offers is empty %}
+                        <p class="muted">No offers yet.</p>
+                    {% else %}
+                        <ul class="mini">
+                            {% for offer in offers %}
+                                <li>
+                                    <span>{{ offer.buyer.fullName }}</span>
+                                    <strong>${{ offer.amount|number_format(2) }}</strong>
+                                    <span class="badge badge--{{ offer.status }}">{{ offer.status|capitalize }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <a class="btn btn--ghost btn--sm btn--block" href="{{ path('offers') }}">Manage offers</a>
+                    {% endif %}
+                </section>
+            {% endif %}
+        </aside>
+    </div>
+{% endblock %}

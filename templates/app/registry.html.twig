@@ -1,0 +1,25 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}My registry | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">{{ stats.filed }} filed · {{ stats.sale }} for sale · {{ stats.lost }} lost</p>
+
+    <div class="page-head">
+        <h1>Your registry.</h1>
+        <a class="btn btn--primary" href="{{ path('item_new') }}">+ Register an item</a>
+    </div>
+
+    {% if items is empty %}
+        <div class="empty">
+            <p>Nothing filed yet.</p>
+            <a class="btn btn--ghost" href="{{ path('item_new') }}">Register your first item</a>
+        </div>
+    {% else %}
+        <div class="grid">
+            {% for item in items %}
+                {% include 'app/_item_card.html.twig' with {item: item, mode: 'mine'} %}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

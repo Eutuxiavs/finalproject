@@ -1,0 +1,57 @@
+{% set mine = app.user and item.owner.id == app.user.id %}
+
+<article class="item">
+    <div class="item__img">
+        {% if item.photo %}
+            <img src="{{ asset(item.photo) }}" alt="{{ item.name }}">
+        {% else %}
+            <i class="bi bi-image"></i>
+        {% endif %}
+
+        {% if item.status == 'for_sale' %}
+            <span class="tag tag--sale">For sale</span>
+        {% elseif item.status == 'lost' %}
+            <span class="tag tag--lost">Lost</span>
+        {% endif %}
+
+        {% if item.status == 'for_sale' and item.price %}
+            <span class="price">${{ item.price|number_format(2) }}</span>
+        {% endif %}
+    </div>
+
+    <div class="item__body">
+        <span class="item__cat">{{ item.category }}</span>
+        <h3>{{ item.name }}</h3>
+
+        <div class="item__meta">
+            <span>{{ item.claimId }}</span>
+            <span class="badge badge--{{ item.status }}">
+                {{ item.status == 'for_sale' ? 'For sale' : (item.status == 'lost' ? 'Lost' : 'Owned') }}
+            </span>
+        </div>
+
+        {% if mode == 'market' %}
+            <p class="item__by">By {{ item.owner.fullName }}{% if item.city %} · {{ item.city }}{% endif %}</p>
+
+            {% if mine %}
+                <a class="btn btn--ghost btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">Your listing: manage</a>
+            {% elseif item.status == 'for_sale' %}
+                <details class="offerbox">
+                    <summary class="btn btn--primary btn--sm btn--block">Make offer</summary>
+                    <form method="post" action="{{ path('offer_make', {id: item.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('offer_item_' ~ item.id) }}">
+                        <label>Your offer ($)</label>
+                        <input class="input" type="number" name="amount" min="1" step="0.01" placeholder="{{ item.price }}" required>
+                        <label>Message (optional)</label>
+                        <textarea class="input" name="message" rows="2" maxlength="500" placeholder="Say hello to the seller"></textarea>
+                        <button type="submit" class="btn btn--accent btn--sm btn--block">Send offer</button>
+                    </form>
+                </details>
+            {% else %}
+                <p class="item__lost">Reported lost by its owner.</p>
+            {% endif %}
+        {% else %}
+            <a class="btn btn--ghost btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">View record</a>
+        {% endif %}
+    </div>
+</article>

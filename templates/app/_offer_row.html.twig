@@ -1,0 +1,49 @@
+{% macro act(offer, action, label, cls, ask) %}
+    <form method="post" action="{{ path('offer_action', {id: offer.id, action: action}) }}" {% if ask %}onsubmit="return confirm('{{ ask }}')"{% endif %}>
+        <input type="hidden" name="_token" value="{{ csrf_token('offer_' ~ offer.id) }}">
+        <button class="btn {{ cls }} btn--sm" type="submit">{{ label }}</button>
+    </form>
+{% endmacro %}
+
+{% import _self as m %}
+
+{% set isSeller = role == 'seller' %}
+{% set myDone = isSeller ? offer.sellerConfirmed : offer.buyerConfirmed %}
+{% set theirDone = isSeller ? offer.buyerConfirmed : offer.sellerConfirmed %}
+
+<article class="offer">
+    <div class="offer__main">
+        <h3>{{ offer.item.name }} <small>{{ offer.item.claimId }}</small></h3>
+        <p>
+            {% if isSeller %}From {{ offer.buyer.fullName }}{% else %}To {{ offer.seller.fullName }}{% endif %}
+            · <strong>${{ offer.amount|number_format(2) }}</strong>
+            · {{ offer.createdAt|date('d M Y') }}
+        </p>
+        {% if offer.message %}<p class="offer__msg">&ldquo;{{ offer.message }}&rdquo;</p>{% endif %}
+
+        {% if offer.status == 'accepted' %}
+            <p class="offer__hint">
+                Handover: you {{ myDone ? 'confirmed' : 'have not confirmed yet' }},
+                the other side {{ theirDone ? 'confirmed' : 'has not confirmed yet' }}.
+            </p>
+        {% endif %}
+    </div>
+
+    <div class="offer__side">
+        <span class="badge badge--{{ offer.status }}">{{ offer.status|capitalize }}</span>
+
+        <div class="offer__actions">
+            {% if offer.status == 'pending' and isSeller %}
+                {{ m.act(offer, 'accept', 'Accept', 'btn--primary', '') }}
+                {{ m.act(offer, 'decline', 'Decline', 'btn--ghost', '') }}
+            {% elseif offer.status == 'pending' %}
+                {{ m.act(offer, 'cancel', 'Cancel offer', 'btn--ghost', '') }}
+            {% elseif offer.status == 'accepted' %}
+                {% if not myDone %}
+                    {{ m.act(offer, 'confirm', 'Confirm handover complete', 'btn--accent', 'Only confirm after the exchange actually happened. Continue?') }}
+                {% endif %}
+                {{ m.act(offer, 'cancel', 'Cancel', 'btn--ghost', 'Cancel this deal?') }}
+            {% endif %}
+        </div>
+    </div>
+</article>

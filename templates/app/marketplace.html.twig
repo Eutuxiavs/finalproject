@@ -1,0 +1,44 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Marketplace | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Buy, sell, and help reunite lost items</p>
+
+    <div class="page-head">
+        <h1>Marketplace.</h1>
+        <a class="btn btn--primary" href="{{ path('item_new') }}">+ Register an item</a>
+    </div>
+
+    <div class="toolbar">
+        <div class="pills">
+            <a class="pill {{ filter == 'all' ? 'is-active' }}" href="{{ path('marketplace', {filter: 'all', q: q, category: category}) }}">All listings</a>
+            <a class="pill {{ filter == 'sale' ? 'is-active' }}" href="{{ path('marketplace', {filter: 'sale', q: q, category: category}) }}">For sale</a>
+            <a class="pill {{ filter == 'lost' ? 'is-active' }}" href="{{ path('marketplace', {filter: 'lost', q: q, category: category}) }}">Lost &amp; Found</a>
+        </div>
+
+        <form method="get" action="{{ path('marketplace') }}" class="search">
+            <input type="hidden" name="filter" value="{{ filter }}">
+            <input class="input" type="search" name="q" value="{{ q }}" placeholder="Search name, claim ID, or city">
+            <select class="input" name="category">
+                <option value="">All categories</option>
+                {% for c in categories %}
+                    <option value="{{ c }}" {{ category == c ? 'selected' }}>{{ c }}</option>
+                {% endfor %}
+            </select>
+            <button class="btn btn--ghost btn--sm" type="submit">Search</button>
+        </form>
+    </div>
+
+    <p class="muted count">{{ items|length }} item{{ items|length == 1 ? '' : 's' }} found</p>
+
+    {% if items is empty %}
+        <div class="empty"><p>Nothing matches your search yet.</p></div>
+    {% else %}
+        <div class="grid">
+            {% for item in items %}
+                {% include 'app/_item_card.html.twig' with {item: item, mode: 'market'} %}
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

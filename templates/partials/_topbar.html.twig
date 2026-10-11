@@ -20,13 +20,16 @@
             <a class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark"
                href="#" data-bs-toggle="dropdown">
                 <i class="bi bi-person-circle fs-4 me-2"></i>
-                <span class="d-none d-md-inline">Admin</span>
+                <span class="d-none d-md-inline">{{ app.user ? app.user.fullName : 'Guest' }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
-                <li><a class="dropdown-item" href="#">Profile</a></li>
+                {% if app.user %}
+                    <li><span class="dropdown-item-text text-muted small">{{ app.user.email }}</span></li>
+                    <li><hr class="dropdown-divider"></li>
+                {% endif %}
                 <li><a class="dropdown-item" href="{{ path('app_settings') }}">Settings</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item" href="#">Logout</a></li>
+                <li><a class="dropdown-item" href="{{ path('app_logout') }}">Logout</a></li>
             </ul>
         </div>
     </div>
