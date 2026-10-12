@@ -17,6 +17,27 @@ class ItemRepository extends ServiceEntityRepository
     }
 
     /** @return Item[] */
+    public function findLatest(int $limit = 6): array
+    {
+        return $this->createQueryBuilder('i')
+            ->orderBy('i.id', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countAll(?string $status = null): int
+    {
+        $qb = $this->createQueryBuilder('i')->select('COUNT(i.id)');
+
+        if ($status !== null) {
+            $qb->andWhere('i.status = :status')->setParameter('status', $status);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /** @return Item[] */
     public function findForMarketplace(string $filter, string $q, string $category): array
     {
         $statuses = match ($filter) {

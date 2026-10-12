@@ -41,7 +41,7 @@
                     <form method="post" action="{{ path('offer_make', {id: item.id}) }}">
                         <input type="hidden" name="_token" value="{{ csrf_token('offer_item_' ~ item.id) }}">
                         <label>Your offer ($)</label>
-                        <input class="input" type="number" name="amount" min="1" step="0.01" placeholder="{{ item.price }}" required>
+                        <input class="input" type="number" name="amount" min="1" step="0.01" value="{{ item.price }}" required>
                         <label>Message (optional)</label>
                         <textarea class="input" name="message" rows="2" maxlength="500" placeholder="Say hello to the seller"></textarea>
                         <button type="submit" class="btn btn--accent btn--sm btn--block">Send offer</button>
@@ -51,6 +51,49 @@
                 <p class="item__lost">Reported lost by its owner.</p>
             {% endif %}
         {% else %}
+            {% set token = csrf_token('item_' ~ item.id) %}
+            {% set updateUrl = path('item_update', {id: item.id}) %}
+
+            {% if item.status == 'owned' %}
+                <details class="offerbox">
+                    <summary class="btn btn--primary btn--sm btn--block">List for sale</summary>
+                    <form method="post" action="{{ updateUrl }}">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="sell">
+                        <input type="hidden" name="back" value="registry">
+                        <label>Asking price ($)</label>
+                        <input class="input" type="number" name="price" min="1" step="0.01" placeholder="e.g. 450.00" required>
+                        <button type="submit" class="btn btn--accent btn--sm btn--block">List on marketplace</button>
+                    </form>
+                </details>
+                <form method="post" action="{{ updateUrl }}">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <input type="hidden" name="action" value="lost">
+                    <input type="hidden" name="back" value="registry">
+                    <button type="submit" class="btn btn--ghost btn--sm btn--block">Report lost</button>
+                </form>
+            {% elseif item.status == 'for_sale' %}
+                <form method="post" action="{{ updateUrl }}">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <input type="hidden" name="action" value="unlist">
+                    <input type="hidden" name="back" value="registry">
+                    <button type="submit" class="btn btn--ghost btn--sm btn--block">Move back to inventory</button>
+                </form>
+                <form method="post" action="{{ updateUrl }}">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <input type="hidden" name="action" value="lost">
+                    <input type="hidden" name="back" value="registry">
+                    <button type="submit" class="btn btn--ghost btn--sm btn--block">Report lost</button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ updateUrl }}">
+                    <input type="hidden" name="_token" value="{{ token }}">
+                    <input type="hidden" name="action" value="found">
+                    <input type="hidden" name="back" value="registry">
+                    <button type="submit" class="btn btn--primary btn--sm btn--block">I found it</button>
+                </form>
+            {% endif %}
+
             <a class="btn btn--ghost btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">View record</a>
         {% endif %}
     </div>

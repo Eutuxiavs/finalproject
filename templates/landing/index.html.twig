@@ -13,6 +13,8 @@
 </head>
 <body>
 
+{% set startPath = app.user ? path('item_new') : path('app_register') %}
+
 {# ============ NAV ============ #}
 <header class="nav">
     <div class="wrap nav__inner">
@@ -27,8 +29,12 @@
             <a href="#system">The System</a>
         </nav>
         <div class="nav__cta">
-            <a href="{{ path('app_login') }}" class="link">Log in</a>
-            <a href="{{ path('app_dashboard') }}" class="btn btn--primary btn--sm">Register an item</a>
+            {% if app.user %}
+                <a href="{{ path('app_after_login') }}" class="link">My account</a>
+            {% else %}
+                <a href="{{ path('app_login') }}" class="link">Log in</a>
+            {% endif %}
+            <a href="{{ startPath }}" class="btn btn--primary btn--sm">Register an item</a>
         </div>
     </div>
 </header>
@@ -45,7 +51,7 @@
                 seeing your name.
             </p>
             <div class="hero__actions">
-                <a href="{{ path('app_dashboard') }}" class="btn btn--primary">Register your first item</a>
+                <a href="{{ startPath }}" class="btn btn--primary">Register your first item</a>
                 <a href="#certificate" class="btn btn--ghost">Read a certificate</a>
             </div>
         </div>
@@ -61,7 +67,7 @@
     </div>
 </section>
 
-{# ============ CERTIFICATE ============ #}
+{# ============ CERTIFICATE (specimen) ============ #}
 <section class="section" id="certificate">
     <div class="wrap">
         <div class="section__head section__head--center">
@@ -83,13 +89,13 @@
                     This certifies that the item described below has been recorded under a
                     verified Yonzon account, with supporting proof of purchase held in confidence.
                 </p>
-                <h3 class="cert__item">Leica Camera M11</h3>
+                <h3 class="cert__item">Sample Item Name</h3>
 
                 <dl class="cert__meta">
-                    <div><dt>Owner</dt><dd>Jayvee Yonzon</dd></div>
-                    <div><dt>Claim ID</dt><dd>YZ-CM11-00421</dd></div>
-                    <div><dt>Serial no.</dt><dd>•••••421</dd></div>
-                    <div><dt>Registered</dt><dd>12 Aug 2026</dd></div>
+                    <div><dt>Owner</dt><dd>Your Name</dd></div>
+                    <div><dt>Claim ID</dt><dd>YZ-XXXX-000001</dd></div>
+                    <div><dt>Serial no.</dt><dd>•••••000</dd></div>
+                    <div><dt>Registered</dt><dd>{{ 'now'|date('d M Y') }}</dd></div>
                 </dl>
             </div>
 
@@ -122,33 +128,56 @@
     </div>
 </section>
 
-{# ============ FILED ITEMS ============ #}
+{# ============ FILED ITEMS (real data) ============ #}
 <section class="section">
     <div class="wrap">
         <div class="section__head">
             <span class="eyebrow">Registry</span>
-            <h2>A few things already filed with Yonzon.</h2>
-            <p class="muted">Real claims, real categories. Every item gets the same certificate, the same QR code, the same quiet protection.</p>
+            <h2>Filed with Yonzon.</h2>
+            {% if stats.items > 0 %}
+                <p class="muted">
+                    {{ stats.items }} registered item{{ stats.items == 1 ? '' : 's' }}
+                    · {{ stats.sale }} for sale · {{ stats.lost }} lost
+                    · {{ stats.members }} member{{ stats.members == 1 ? '' : 's' }}.
+                    Every item gets the same certificate and the same quiet protection.
+                </p>
+            {% else %}
+                <p class="muted">Items registered by our members will appear here.</p>
+            {% endif %}
         </div>
 
-        <div class="grid grid--3">
-            {% for item in items %}
-                <article class="card">
-                    <div class="card__top">
-                        <span class="card__icon"><i class="bi bi-box-seam"></i></span>
-                        <span class="badge badge--{{ item[4] }}">
-                            {{ item[4] == 'warranty' ? 'Warranty' : (item[4] == 'lost' ? 'Lost' : 'Owned') }}
-                        </span>
-                    </div>
-                    <span class="card__cat">{{ item[1] }}</span>
-                    <h3>{{ item[0] }}</h3>
-                    <div class="card__meta">
-                        <span>{{ item[2] }}</span>
-                        <span>Registered {{ item[3] }}</span>
-                    </div>
-                </article>
-            {% endfor %}
-        </div>
+        {% if latest is empty %}
+            <div class="empty-state">
+                <i class="bi bi-box-seam"></i>
+                <p>No items have been registered yet.</p>
+                <a href="{{ startPath }}" class="btn btn--primary btn--sm">Be the first to register</a>
+            </div>
+        {% else %}
+            <div class="grid grid--3">
+                {% for item in latest %}
+                    <article class="card">
+                        <div class="card__photo">
+                            {% if item.photo %}
+                                <img src="{{ asset(item.photo) }}" alt="{{ item.name }}">
+                            {% else %}
+                                <i class="bi bi-box-seam"></i>
+                            {% endif %}
+                        </div>
+                        <div class="card__top">
+                            <span class="card__cat">{{ item.category }}</span>
+                            <span class="badge badge--{{ item.status }}">
+                                {{ item.status == 'for_sale' ? 'For sale' : (item.status == 'lost' ? 'Lost' : 'Owned') }}
+                            </span>
+                        </div>
+                        <h3>{{ item.name }}</h3>
+                        <div class="card__meta">
+                            <span>{{ item.claimId }}</span>
+                            <span>Registered {{ item.createdAt|date('d M Y') }}</span>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% endif %}
     </div>
 </section>
 
@@ -159,26 +188,25 @@
             <span class="eyebrow eyebrow--light">If it's ever lost</span>
             <h2>A stranger can reach you without ever knowing who you are.</h2>
             <p class="lead lead--light">
-                Every registered item carries a claim ID and a QR code. Scan it, and
-                instead of a name, a phone number, or an address, a finder sees only a
-                status and a way to send word, routed through Yonzon, never through
-                your inbox directly.
+                Every registered item carries a claim ID. Report it lost and it shows up in
+                Lost &amp; Found on the marketplace, with only a status and a claim ID, never
+                your name, phone number, or address.
             </p>
             <ul class="ticks">
                 <li><i class="bi bi-check2-circle"></i> Personal details never shown</li>
-                <li><i class="bi bi-check2-circle"></i> Messages relayed through Yonzon</li>
+                <li><i class="bi bi-check2-circle"></i> Serial numbers stay private</li>
                 <li><i class="bi bi-check2-circle"></i> Status updates the moment it's reported lost</li>
             </ul>
         </div>
 
         <aside class="scan">
-            <span class="scan__label">Scanned record</span>
-            <p class="scan__title"><i class="bi bi-patch-check-fill"></i> This item has a verified owner.</p>
+            <span class="scan__label">Lost &amp; Found</span>
+            <p class="scan__title"><i class="bi bi-patch-check-fill"></i> {{ stats.lost }} item{{ stats.lost == 1 ? '' : 's' }} currently reported lost.</p>
             <dl>
-                <div><dt>Claim ID</dt><dd>YZ-CM11-00421</dd></div>
-                <div><dt>Status</dt><dd><span class="badge badge--lost">Lost</span></dd></div>
+                <div><dt>Registered items</dt><dd>{{ stats.items }}</dd></div>
+                <div><dt>For sale</dt><dd>{{ stats.sale }}</dd></div>
             </dl>
-            <a href="#" class="btn btn--accent btn--block">Contact owner</a>
+            <a href="{{ path('marketplace', {filter: 'lost'}) }}" class="btn btn--accent btn--block">Browse Lost &amp; Found</a>
         </aside>
     </div>
 </section>
@@ -193,7 +221,7 @@
 
         <div class="rooms">
             {% for room in rooms %}
-                <a class="room" href="{{ room[4] ? path(room[4]) : '#' }}">
+                <a class="room" href="{{ path(room[4]) }}">
                     <span class="room__icon"><i class="bi {{ room[0] }}"></i></span>
                     <div class="room__text">
                         <h3>{{ room[1] }}</h3>
@@ -211,8 +239,8 @@
 <section class="cta">
     <div class="wrap cta__inner">
         <h2>Give what you own a record that outlasts the receipt.</h2>
-        <p>Five entries file your first claim. A lifetime to be glad you did.</p>
-        <a href="{{ path('app_dashboard') }}" class="btn btn--accent">Register an item</a>
+        <p>One short form files your first claim. A lifetime to be glad you did.</p>
+        <a href="{{ startPath }}" class="btn btn--accent">Register an item</a>
     </div>
 </section>
 

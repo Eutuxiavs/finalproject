@@ -4,9 +4,36 @@
 
 {% block body %}
 <div class="card shadow-sm border-0">
-    <div class="card-body">
-        <h5>Users</h5>
-        <p class="text-muted mb-0">Your users list will go here.</p>
+    <div class="card-header bg-white fw-bold">All users ({{ users|length }})</div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Joined</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.id }}</td>
+                        <td>{{ user.fullName }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if 'ROLE_ADMIN' in user.roles %}
+                                <span class="badge text-bg-dark">Admin</span>
+                            {% else %}
+                                <span class="badge text-bg-secondary">User</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ user.createdAt|date('d M Y') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

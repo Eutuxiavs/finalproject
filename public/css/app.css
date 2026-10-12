@@ -208,3 +208,27 @@ textarea.input { resize: vertical; }
     .offer__side { justify-items: start; }
     .offer__actions { justify-content: flex-start; }
 }
+/* ---------- Listing choice on the register form ---------- */
+.choices { display: grid; gap: 10px; }
+.field .choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1.5px solid var(--line);
+    border-radius: 12px;
+    background: var(--paper);
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: .92rem;
+    font-weight: 400;
+    color: var(--ink);
+    margin: 0;
+    transition: border-color .2s, background .2s;
+}
+.field .choice:hover { border-color: var(--brass); }
+.field .choice:has(input:checked) { border-color: var(--teal); background: var(--sage); }
+.choice input { margin-top: 4px; accent-color: var(--teal); }
+.choice strong { display: block; color: var(--teal); }
+.choice small { color: var(--muted); font-size: .82rem; }
