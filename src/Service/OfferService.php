@@ -1,4 +1,4 @@
-<?php
+public function create(<?php
 
 namespace App\Service;
 
@@ -26,7 +26,28 @@ class OfferService
         private TrustService $trust,
     ) {
     }
+    /** A broken rule only rolls back; it must not close the EntityManager. */
+    private function transactional(callable $work): mixed
+    {
+        $this->em->beginTransaction();
 
+        try {
+            $result = $work();
+            $this->em->flush();
+            $this->em->commit();
+
+            return $result;
+        } catch (\DomainException $e) {
+            $this->em->rollback();
+
+            throw $e;
+        } catch (\Throwable $e) {
+            $this->em->close();
+            $this->em->rollback();
+
+            throw $e;
+        }
+    }
     public function create(Item $item, User $buyer, string $amount, ?Item $tradeItem, ?string $message): Offer
     {
         return $this->em->wrapInTransaction(function () use ($item, $buyer, $amount, $tradeItem, $message): Offer {
