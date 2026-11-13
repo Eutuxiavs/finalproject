@@ -34,7 +34,7 @@ class ImageUploader
             return 'The photo must be 5 MB or smaller.';
         }
 
-        if (!isset(self::ALLOWED[(string) $file->getMimeType()])) {
+                if (!isset(self::ALLOWED[$this->detectMime($file)])) {
             return 'The photo must be a JPG, PNG or WEBP image.';
         }
 
@@ -44,7 +44,7 @@ class ImageUploader
     /** Saves the file and returns its path relative to /public. */
     public function save(UploadedFile $file, string $folder): string
     {
-        $mime = (string) $file->getMimeType();
+        $mime = $this->detectMime($file);
         $extension = self::ALLOWED[$mime];
         $name = bin2hex(random_bytes(8)) . '.' . $extension;
         $dir = $this->projectDir . '/public/uploads/' . $folder;
@@ -58,7 +58,17 @@ class ImageUploader
 
         return 'uploads/' . $folder . '/' . $name;
     }
+    /** Works with or without the fileinfo extension. */
+    private function detectMime(UploadedFile $file): string
+    {
+        if (extension_loaded('fileinfo')) {
+            return (string) $file->getMimeType();
+        }
 
+        $info = @getimagesize($file->getPathname());
+
+        return $info['mime'] ?? '';
+    }
     /** Removes a previously saved upload. Only touches files inside public/uploads. */
     public function delete(?string $relativePath): void
     {
