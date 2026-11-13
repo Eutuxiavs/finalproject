@@ -18,6 +18,10 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            user_checker: App\Security\UserChecker
+            login_throttling:
+                max_attempts: 5
+                interval: '10 minutes'
             form_login:
                 login_path: app_login
                 check_path: app_login
@@ -30,7 +34,7 @@ security:
 
     access_control:
         - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/(after-login|registry|marketplace|offers|profile), roles: ROLE_USER }
+        - { path: ^/(after-login|registry|marketplace|offers|profile|messages|u/), roles: ROLE_USER }
 
 when@test:
     security:

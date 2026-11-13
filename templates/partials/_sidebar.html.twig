@@ -20,15 +20,27 @@
             </a>
         </li>
         <li class="nav-item">
-            <a class="nav-link {{ route == 'app_settings' ? 'active' : '' }}" href="{{ path('app_settings') }}">
-                <i class="bi bi-gear"></i>
-                <span>Settings</span>
+            <a class="nav-link {{ route == 'app_reports' ? 'active' : '' }}" href="{{ path('app_reports') }}">
+                <i class="bi bi-flag"></i>
+                <span>Reports</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ route == 'app_revenue' ? 'active' : '' }}" href="{{ path('app_revenue') }}">
+                <i class="bi bi-cash-coin"></i>
+                <span>Revenue</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{{ path('marketplace') }}">
+                <i class="bi bi-shop"></i>
+                <span>Marketplace</span>
             </a>
         </li>
         <li class="nav-item">
             <a class="nav-link" href="{{ path('app_home') }}">
                 <i class="bi bi-box-arrow-up-right"></i>
-                <span>Landing Page</span>
+                <span>Landing page</span>
             </a>
         </li>
     </ul>

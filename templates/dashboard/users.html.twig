@@ -6,30 +6,55 @@
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white fw-bold">All users ({{ users|length }})</div>
     <div class="table-responsive">
-        <table class="table table-hover mb-0">
+        <table class="table table-hover align-middle mb-0">
             <thead class="table-light">
                 <tr>
                     <th>#</th>
                     <th>Name</th>
                     <th>Email</th>
                     <th>Role</th>
+                    <th>Status</th>
                     <th>Joined</th>
+                    <th class="text-end">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for user in users %}
+                    {% set isMe = user.id == app.user.id %}
                     <tr>
                         <td>{{ user.id }}</td>
-                        <td>{{ user.fullName }}</td>
+                        <td>{{ user.fullName }}{% if isMe %} <small class="text-muted">(you)</small>{% endif %}</td>
                         <td>{{ user.email }}</td>
                         <td>
-                            {% if 'ROLE_ADMIN' in user.roles %}
+                            {% if user.admin %}
                                 <span class="badge text-bg-dark">Admin</span>
                             {% else %}
-                                <span class="badge text-bg-secondary">User</span>
+                                <span class="badge text-bg-secondary">Client</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.suspended %}
+                                <span class="badge text-bg-danger">Suspended</span>
+                            {% else %}
+                                <span class="badge text-bg-success">Active</span>
                             {% endif %}
                         </td>
                         <td>{{ user.createdAt|date('d M Y') }}</td>
+                        <td class="text-end">
+                            {% if not isMe %}
+                                <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
+                                    {% set t = csrf_token('admin_user_' ~ user.id) %}
+                                    <form method="post" action="{{ path('admin_user_action', {id: user.id, action: user.suspended ? 'unsuspend' : 'suspend'}) }}" {% if not user.suspended %}data-confirm="Suspend {{ user.fullName }}? They will not be able to log in."{% endif %}>
+                                        <input type="hidden" name="_token" value="{{ t }}">
+                                        <button class="btn btn-sm {{ user.suspended ? 'btn-outline-success' : 'btn-outline-danger' }}" type="submit">{{ user.suspended ? 'Unsuspend' : 'Suspend' }}</button>
+                                    </form>
+                                    <form method="post" action="{{ path('admin_user_action', {id: user.id, action: user.admin ? 'demote' : 'promote'}) }}" data-confirm="{{ user.admin ? 'Remove admin access from' : 'Make' }} {{ user.fullName }}{{ user.admin ? '?' : ' an admin?' }}">
+                                        <input type="hidden" name="_token" value="{{ t }}">
+                                        <button class="btn btn-sm btn-outline-secondary" type="submit">{{ user.admin ? 'Remove admin' : 'Make admin' }}</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -1,0 +1,21 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Report a listing | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow"><a href="{{ path('listing_show', {id: item.id}) }}">&larr; Back to listing</a></p>
+    <h1>Report a listing.</h1>
+
+    <div class="panel panel--narrow">
+        <p>You are reporting <strong>{{ item.name }}</strong> ({{ item.claimId }}) listed by {{ item.owner.fullName }}.</p>
+
+        {% if error %}<div class="flash flash--error">{{ error }}</div>{% endif %}
+
+        <form method="post">
+            <input type="hidden" name="_token" value="{{ csrf_token('report_' ~ item.id) }}">
+            <label for="reason">What is wrong with this listing?</label>
+            <textarea class="input" id="reason" name="reason" rows="5" maxlength="500" required placeholder="For example: it looks like a scam, the photo is not of the real item, or the description is misleading."></textarea>
+            <button class="btn btn--primary" type="submit">Send report</button>
+        </form>
+    </div>
+{% endblock %}

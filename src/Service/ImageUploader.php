@@ -13,6 +13,8 @@ class ImageUploader
         'image/webp' => 'webp',
     ];
 
+    private const MAX_WIDTH = 1200;
+
     public function __construct(
         #[Autowire('%kernel.project_dir%')] private string $projectDir,
     ) {
@@ -38,7 +40,8 @@ class ImageUploader
     /** Saves the file and returns its path relative to /public. */
     public function save(UploadedFile $file, string $folder): string
     {
-        $extension = self::ALLOWED[(string) $file->getMimeType()];
+        $mime = (string) $file->getMimeType();
+        $extension = self::ALLOWED[$mime];
         $name = bin2hex(random_bytes(8)) . '.' . $extension;
         $dir = $this->projectDir . '/public/uploads/' . $folder;
 
@@ -47,7 +50,60 @@ class ImageUploader
         }
 
         $file->move($dir, $name);
+        $this->shrink($dir . '/' . $name, $mime);
 
         return 'uploads/' . $folder . '/' . $name;
+    }
+
+    /** Removes a previously saved upload. Only touches files inside public/uploads. */
+    public function delete(?string $relativePath): void
+    {
+        if (!$relativePath || !str_starts_with($relativePath, 'uploads/') || str_contains($relativePath, '..')) {
+            return;
+        }
+
+        $full = $this->projectDir . '/public/' . $relativePath;
+        if (is_file($full)) {
+            @unlink($full);
+        }
+    }
+
+    /** Scales big photos down so a 5 MB phone picture does not sit on disk untouched. Needs the GD extension, otherwise it is skipped. */
+    private function shrink(string $path, string $mime): void
+    {
+        if (!extension_loaded('gd')) {
+            return;
+        }
+
+        $size = @getimagesize($path);
+        if (!$size || $size[0] <= self::MAX_WIDTH) {
+            return;
+        }
+
+        [$width, $height] = $size;
+        $source = match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($path),
+            'image/png' => @imagecreatefrompng($path),
+            'image/webp' => @imagecreatefromwebp($path),
+            default => false,
+        };
+        if (!$source) {
+            return;
+        }
+
+        $newHeight = (int) round($height * (self::MAX_WIDTH / $width));
+        $resized = imagecreatetruecolor(self::MAX_WIDTH, $newHeight);
+        if ($mime === 'image/png') {
+            imagealphablending($resized, false);
+            imagesavealpha($resized, true);
+        }
+        imagecopyresampled($resized, $source, 0, 0, 0, 0, self::MAX_WIDTH, $newHeight, $width, $height);
+
+        match ($mime) {
+            'image/jpeg' => imagejpeg($resized, $path, 85),
+            'image/png' => imagepng($resized, $path, 6),
+            'image/webp' => imagewebp($resized, $path, 85),
+            default => null,
+        };
     }
 }

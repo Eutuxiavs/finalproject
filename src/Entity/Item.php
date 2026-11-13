@@ -15,6 +15,7 @@ class Item
 
     public const STATUS_OWNED = 'owned';
     public const STATUS_FOR_SALE = 'for_sale';
+    public const STATUS_RESERVED = 'reserved';
     public const STATUS_LOST = 'lost';
 
     #[ORM\Id]
@@ -52,6 +53,12 @@ class Item
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     public ?string $price = null;
 
+    #[ORM\Column(options: ['default' => false])]
+    public bool $isFeatured = false;
+
+    #[ORM\Column(nullable: true)]
+    public ?\DateTimeImmutable $featuredUntil = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     public ?User $owner = null;
@@ -62,5 +69,15 @@ class Item
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public function isFeaturedNow(): bool
+    {
+        return $this->isFeatured && $this->featuredUntil !== null && $this->featuredUntil > new \DateTimeImmutable();
+    }
+
+    public function isPublic(): bool
+    {
+        return in_array($this->status, [self::STATUS_FOR_SALE, self::STATUS_LOST, self::STATUS_RESERVED], true);
     }
 }

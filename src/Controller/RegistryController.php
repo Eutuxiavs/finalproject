@@ -3,10 +3,12 @@
 namespace App\Controller;
 
 use App\Entity\Item;
-use App\Entity\Offer;
+use App\Entity\OwnershipHistory;
 use App\Entity\User;
 use App\Repository\ItemRepository;
+use App\Entity\PlatformRevenue;
 use App\Repository\OfferRepository;
+use App\Service\OfferService;
 use App\Service\ImageUploader;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -23,7 +25,7 @@ class RegistryController extends AbstractController
 
         $stats = [
             'filed' => count($mine),
-            'sale' => count(array_filter($mine, fn (Item $i) => $i->status === Item::STATUS_FOR_SALE)),
+            'sale' => count(array_filter($mine, fn (Item $i) => in_array($i->status, [Item::STATUS_FOR_SALE, Item::STATUS_RESERVED], true))),
             'lost' => count(array_filter($mine, fn (Item $i) => $i->status === Item::STATUS_LOST)),
         ];
 
@@ -130,21 +132,21 @@ class RegistryController extends AbstractController
     }
 
     #[Route('/registry/{id}', name: 'item_show', requirements: ['id' => '\d+'])]
-    public function show(Item $item, OfferRepository $offers): Response
+    public function show(Item $item, OfferRepository $offers, EntityManagerInterface $em): Response
     {
         $this->assertOwner($item);
 
         return $this->render('app/item_show.html.twig', [
             'item' => $item,
-            'offers' => $offers->findBy(
-                ['item' => $item, 'status' => [Offer::PENDING, Offer::ACCEPTED]],
-                ['id' => 'DESC'],
-            ),
+            'offers' => $offers->findOpenForItem($item),
+            'history' => $em->getRepository(OwnershipHistory::class)->findBy(['item' => $item], ['id' => 'DESC']),
+            'featureFee' => PlatformRevenue::FEATURED_FEE,
+            'featureDays' => PlatformRevenue::FEATURED_DAYS,
         ]);
     }
 
     #[Route('/registry/{id}/update', name: 'item_update', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function update(Item $item, Request $request, EntityManagerInterface $em, OfferRepository $offers): Response
+    public function update(Item $item, Request $request, EntityManagerInterface $em, OfferService $offerService, ImageUploader $uploader): Response
     {
         $this->assertOwner($item);
 
@@ -156,8 +158,42 @@ class RegistryController extends AbstractController
 
         $action = (string) $request->request->get('action');
 
+        // An item locked into an accepted deal must be released first.
+        if ($item->status === Item::STATUS_RESERVED && in_array($action, ['sell', 'unlist', 'lost', 'delete', 'feature', 'photo'], true)) {
+            $this->addFlash('error', 'This item is part of an accepted deal. Finish or cancel the deal on the Offers page first.');
+
+            return $this->backTo($item, $request);
+        }
+
         switch ($action) {
+            case 'photo':
+                $file = $request->files->get('photo');
+                if (!$file) {
+                    $this->addFlash('error', 'Choose a photo to upload.');
+
+                    return $this->backTo($item, $request);
+                }
+                if ($error = $uploader->validate($file)) {
+                    $this->addFlash('error', $error);
+
+                    return $this->backTo($item, $request);
+                }
+                $uploader->delete($item->photo);
+                $item->photo = $uploader->save($file, 'items');
+                $this->addFlash('success', 'Photo updated.');
+                break;
+
             case 'sell':
+                if ($item->status !== Item::STATUS_OWNED) {
+                    $this->addFlash('error', 'Only items in your inventory can be listed for sale.');
+
+                    return $this->backTo($item, $request);
+                }
+                if (!$item->photo) {
+                    $this->addFlash('error', 'Add a real photo of the item before listing it. Buyers need to see it.');
+
+                    return $this->backTo($item, $request);
+                }
                 $price = str_replace(',', '', trim((string) $request->request->get('price')));
                 if (!is_numeric($price) || (float) $price <= 0 || (float) $price > 99999999) {
                     $this->addFlash('error', 'Please enter a valid price.');
@@ -170,25 +206,58 @@ class RegistryController extends AbstractController
                 break;
 
             case 'unlist':
-                $this->closeOffers($item, $offers);
+                $offerService->cancelOpenOffersFor($item);
                 $item->status = Item::STATUS_OWNED;
                 $item->price = null;
+                $item->isFeatured = false;
+                $item->featuredUntil = null;
                 $this->addFlash('success', 'Your item is back in your inventory.');
                 break;
 
             case 'lost':
-                $this->closeOffers($item, $offers);
+                $offerService->cancelOpenOffersFor($item);
                 $item->status = Item::STATUS_LOST;
                 $item->price = null;
+                $item->isFeatured = false;
+                $item->featuredUntil = null;
                 $this->addFlash('success', 'Reported lost. It now shows in Lost & Found.');
                 break;
 
             case 'found':
+                if ($item->status !== Item::STATUS_LOST) {
+                    $this->addFlash('error', 'Only items reported lost can be marked found.');
+
+                    return $this->backTo($item, $request);
+                }
                 $item->status = Item::STATUS_OWNED;
                 $this->addFlash('success', 'Glad you found it. The status is back to owned.');
                 break;
 
+            case 'feature':
+                if ($item->status !== Item::STATUS_FOR_SALE) {
+                    $this->addFlash('error', 'Only items listed for sale can be featured.');
+
+                    return $this->backTo($item, $request);
+                }
+                if ($item->isFeaturedNow()) {
+                    $this->addFlash('error', 'This listing is already featured.');
+
+                    return $this->backTo($item, $request);
+                }
+                $item->isFeatured = true;
+                $item->featuredUntil = new \DateTimeImmutable('+' . PlatformRevenue::FEATURED_DAYS . ' days');
+                $fee = new PlatformRevenue();
+                $fee->source = PlatformRevenue::SOURCE_FEATURED;
+                $fee->amount = PlatformRevenue::FEATURED_FEE;
+                $fee->user = $this->getUser();
+                $fee->item = $item;
+                $em->persist($fee);
+                $this->addFlash('success', sprintf('Featured for %d days. This is a simulated $%s charge; no real payment was taken.', PlatformRevenue::FEATURED_DAYS, PlatformRevenue::FEATURED_FEE));
+                break;
+
             case 'delete':
+                $offerService->cancelOpenOffersFor($item);
+                $uploader->delete($item->photo);
                 $em->remove($item);
                 $em->flush();
                 $this->addFlash('success', 'The claim was deleted.');
@@ -221,13 +290,6 @@ class RegistryController extends AbstractController
 
         if (!$user instanceof User || $item->owner?->getId() !== $user->getId()) {
             throw $this->createAccessDeniedException();
-        }
-    }
-
-    private function closeOffers(Item $item, OfferRepository $offers): void
-    {
-        foreach ($offers->findBy(['item' => $item, 'status' => [Offer::PENDING, Offer::ACCEPTED]]) as $offer) {
-            $offer->status = Offer::CANCELLED;
         }
     }
 }

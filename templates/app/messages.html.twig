@@ -1,0 +1,60 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Messages | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Talk to buyers, sellers and finders</p>
+    <h1>Messages.</h1>
+
+    {% if conversations is empty %}
+        <div class="empty">
+            <p>No conversations yet. Open a listing and choose "Message seller" to start one.</p>
+            <a class="btn btn--ghost" href="{{ path('marketplace') }}">Browse the marketplace</a>
+        </div>
+    {% else %}
+        <div class="chat">
+            <aside class="chat__list" aria-label="Conversations">
+                {% for c in conversations %}
+                    {% set other = c.buyer.id == app.user.id ? c.seller : c.buyer %}
+                    <a class="chat__row {{ active and c.id == active.id ? 'is-active' }}" href="{{ path('messages', {c: c.id}) }}">
+                        <strong>{{ other.fullName }}</strong>
+                        <span class="chat__item">{{ c.item.name }}</span>
+                        <span class="chat__preview">{{ previews[c.id] }}</span>
+                        {% if unread[c.id] is defined and unread[c.id] > 0 %}<span class="count-badge">{{ unread[c.id] }}</span>{% endif %}
+                    </a>
+                {% endfor %}
+            </aside>
+
+            {% if active %}
+                {% set other = active.buyer.id == app.user.id ? active.seller : active.buyer %}
+                <section class="chat__thread">
+                    <header class="chat__head">
+                        <div>
+                            <strong><a href="{{ path('profile_public', {id: other.id}) }}">{{ other.fullName }}</a></strong>
+                            <span class="muted">about <a href="{{ path('listing_show', {id: active.item.id}) }}">{{ active.item.name }}</a></span>
+                        </div>
+                    </header>
+
+                    <div class="chat__log" id="chat-log"
+                         data-poll="{{ path('message_poll', {id: active.id}) }}"
+                         data-send="{{ path('message_send', {id: active.id}) }}"
+                         data-token="{{ csrf_token('chat') }}"
+                         data-last="{{ thread ? thread|last.id : 0 }}">
+                        {% for m in thread %}
+                            <div class="bubble {{ m.sender.id == app.user.id ? 'bubble--mine' }}" data-id="{{ m.id }}">
+                                <p>{{ m.body|nl2br }}</p>
+                                <time>{{ m.createdAt|date('M j, g:i A') }}</time>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <form class="chat__form" id="chat-form">
+                        <textarea class="input" name="body" rows="1" maxlength="2000" placeholder="Write a message" aria-label="Message" required></textarea>
+                        <button class="btn btn--primary" type="submit">Send</button>
+                    </form>
+                    <p class="chat__error" id="chat-error" role="alert" hidden></p>
+                </section>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endblock %}

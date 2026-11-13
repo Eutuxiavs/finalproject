@@ -18,6 +18,7 @@
             <h2>{{ app.user.fullName }}</h2>
             {% if app.user.business %}<p class="muted">{{ app.user.business }}</p>{% endif %}
             <p class="eyebrow eyebrow--tight">{{ stats.filed }} filed · {{ stats.sale }} for sale · {{ stats.lost }} lost</p>
+            <a class="btn btn--ghost btn--sm" href="{{ path('profile_public', {id: app.user.id}) }}">View public profile</a>
         </div>
     </div>
 
@@ -58,7 +59,7 @@
 
     <details class="danger">
         <summary>Delete my account</summary>
-        <form method="post" action="{{ path('profile_delete') }}" onsubmit="return confirm('This permanently deletes your account, items and offers. Continue?')">
+        <form method="post" action="{{ path('profile_delete') }}" data-confirm="This permanently deletes your account, items and offers. Continue?">
             <input type="hidden" name="_token" value="{{ csrf_token('profile_delete') }}">
             <p class="muted">This removes your account, your registered items and your offers for good. Type your password to confirm.</p>
             <input class="input" type="password" name="password" placeholder="Your password" required autocomplete="current-password">

@@ -19,8 +19,8 @@
 
         <form method="get" action="{{ path('marketplace') }}" class="search">
             <input type="hidden" name="filter" value="{{ filter }}">
-            <input class="input" type="search" name="q" value="{{ q }}" placeholder="Search name, claim ID, or city">
-            <select class="input" name="category">
+            <input class="input" type="search" name="q" value="{{ q }}" placeholder="Search name, claim ID, or city" aria-label="Search listings">
+            <select class="input" name="category" aria-label="Category">
                 <option value="">All categories</option>
                 {% for c in categories %}
                     <option value="{{ c }}" {{ category == c ? 'selected' }}>{{ c }}</option>
@@ -30,7 +30,7 @@
         </form>
     </div>
 
-    <p class="muted count">{{ items|length }} item{{ items|length == 1 ? '' : 's' }} found</p>
+    <p class="muted count">{{ total }} item{{ total == 1 ? '' : 's' }} found</p>
 
     {% if items is empty %}
         <div class="empty"><p>Nothing matches your search yet.</p></div>
@@ -40,5 +40,17 @@
                 {% include 'app/_item_card.html.twig' with {item: item, mode: 'market'} %}
             {% endfor %}
         </div>
+
+        {% if pages > 1 %}
+            <nav class="pager" aria-label="Pages">
+                {% if page > 1 %}
+                    <a class="btn btn--ghost btn--sm" href="{{ path('marketplace', {filter: filter, q: q, category: category, page: page - 1}) }}">&larr; Previous</a>
+                {% endif %}
+                <span class="muted">Page {{ page }} of {{ pages }}</span>
+                {% if page < pages %}
+                    <a class="btn btn--ghost btn--sm" href="{{ path('marketplace', {filter: filter, q: q, category: category, page: page + 1}) }}">Next &rarr;</a>
+                {% endif %}
+            </nav>
+        {% endif %}
     {% endif %}
 {% endblock %}

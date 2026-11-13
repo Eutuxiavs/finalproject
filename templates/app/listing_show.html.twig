@@ -1,0 +1,71 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}{{ item.name }} | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow"><a href="{{ path('marketplace') }}">&larr; Back to marketplace</a></p>
+
+    <div class="detail">
+        <div class="detail__img">
+            {% if item.photo %}
+                <img src="{{ asset(item.photo) }}" alt="{{ item.name }}">
+            {% else %}
+                <i class="bi bi-image"></i>
+            {% endif %}
+        </div>
+
+        <div class="detail__body">
+            <span class="item__cat">{{ item.category }}</span>
+            <h1>{{ item.name }}</h1>
+
+            <p class="detail__badges">
+                <span class="badge badge--{{ item.status }}">{{ item.status|status_label }}</span>
+                {% if item.featuredNow %}<span class="badge badge--featured">Featured</span>{% endif %}
+                <span class="muted">{{ item.claimId }}</span>
+            </p>
+
+            {% if item.status in ['for_sale', 'reserved'] and item.price %}
+                <p class="detail__price">${{ item.price|number_format(2) }}</p>
+            {% endif %}
+
+            <dl class="facts">
+                {% if item.itemCondition %}<div><dt>Condition</dt><dd>{{ item.itemCondition }}</dd></div>{% endif %}
+                {% if item.city %}<div><dt>Location</dt><dd>{{ item.city }}</dd></div>{% endif %}
+                <div><dt>Registered</dt><dd>{{ item.createdAt|date('d M Y') }}</dd></div>
+                <div><dt>Serial number</dt><dd>On file, kept private</dd></div>
+            </dl>
+
+            {% if item.notes %}<p class="detail__notes">{{ item.notes|nl2br }}</p>{% endif %}
+
+            <div class="seller">
+                <div>
+                    <strong><a href="{{ path('profile_public', {id: item.owner.id}) }}">{{ item.owner.fullName }}</a></strong>
+                    {% if verified %}<span class="badge badge--completed"><i class="bi bi-patch-check-fill"></i> Verified trader</span>{% endif %}
+                    <p class="muted">
+                        {% if rating.count %}{{ rating.average|stars }} {{ rating.average|number_format(1) }} ({{ rating.count }} review{{ rating.count == 1 ? '' : 's' }}){% else %}No reviews yet{% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <div class="detail__actions">
+                {% if isOwner %}
+                    <a class="btn btn--primary" href="{{ path('item_show', {id: item.id}) }}">Manage this listing</a>
+                {% elseif blocked %}
+                    <p class="muted">You cannot contact this user.</p>
+                {% else %}
+                    {% if item.status == 'for_sale' %}
+                        {% if pending %}
+                            <a class="btn btn--accent" href="{{ path('offers') }}">You have a pending offer</a>
+                        {% else %}
+                            <a class="btn btn--primary" href="{{ path('offer_new', {id: item.id}) }}">Make offer</a>
+                        {% endif %}
+                    {% endif %}
+                    {% if item.status in ['for_sale', 'lost'] %}
+                        <a class="btn btn--ghost" href="{{ path('message_start', {id: item.id}) }}">{{ item.status == 'lost' ? 'I may have found it' : 'Message seller' }}</a>
+                    {% endif %}
+                    <a class="btn btn--ghost" href="{{ path('report_new', {id: item.id}) }}">Report</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

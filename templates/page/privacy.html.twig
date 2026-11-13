@@ -1,0 +1,25 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Privacy Policy | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Last updated {{ 'now'|date('F Y') }}</p>
+    <h1>Privacy Policy.</h1>
+
+    <div class="panel prose">
+        <h2>What we store</h2>
+        <p>Your name, email, hashed password, optional business name, bio and profile picture; the items you register (including photos and serial numbers); your offers, messages, reviews and reports.</p>
+
+        <h2>What other people can see</h2>
+        <p>Other members can see your name, bio, profile picture, public listings, reviews and trader badge. Your email address and your items' serial numbers are never shown to other members.</p>
+
+        <h2>Passwords and security</h2>
+        <p>Passwords are stored as one-way hashes. Forms are protected with CSRF tokens, and repeated failed log-ins are rate limited.</p>
+
+        <h2>Your control</h2>
+        <p>You can edit your profile at any time, block other members, and permanently delete your account from the Profile page. Deleting your account removes your items, offers, messages and uploaded images.</p>
+
+        <h2>Cookies</h2>
+        <p>Yonzon uses a session cookie to keep you logged in. It does not use advertising or tracking cookies.</p>
+    </div>
+{% endblock %}

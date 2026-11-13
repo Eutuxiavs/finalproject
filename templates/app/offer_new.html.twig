@@ -1,0 +1,52 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Make an offer | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow"><a href="{{ path('listing_show', {id: item.id}) }}">&larr; Back to listing</a></p>
+    <h1>Make an offer.</h1>
+
+    <div class="panel panel--narrow">
+        <p><strong>{{ item.name }}</strong> <span class="muted">{{ item.claimId }}</span><br>
+            Asking <strong>${{ item.price|number_format(2) }}</strong> from {{ item.owner.fullName }}</p>
+
+        {% for error in errors %}<div class="flash flash--error">{{ error }}</div>{% endfor %}
+
+        <form method="post" data-offer-form>
+            <input type="hidden" name="_token" value="{{ csrf_token('offer_' ~ item.id) }}">
+
+            <fieldset class="modes">
+                <legend>What are you offering?</legend>
+                <label class="mode"><input type="radio" name="mode" value="cash" {{ data.mode == 'cash' ? 'checked' }}> Cash</label>
+                <label class="mode"><input type="radio" name="mode" value="trade" {{ data.mode == 'trade' ? 'checked' }} {{ tradeable is empty ? 'disabled' }}> Trade</label>
+                <label class="mode"><input type="radio" name="mode" value="trade_cash" {{ data.mode == 'trade_cash' ? 'checked' }} {{ tradeable is empty ? 'disabled' }}> Trade + cash</label>
+            </fieldset>
+            {% if tradeable is empty %}
+                <p class="muted">You have no items in your inventory available to trade.</p>
+            {% endif %}
+
+            <div data-field="cash">
+                <label for="amount">Cash amount ($)</label>
+                <input class="input" id="amount" type="number" name="amount" min="0" step="0.01" value="{{ data.amount }}">
+            </div>
+
+            {% if tradeable is not empty %}
+                <div data-field="trade">
+                    <label for="trade">Item you will trade</label>
+                    <select class="input" id="trade" name="trade">
+                        <option value="">Choose one of your items</option>
+                        {% for t in tradeable %}
+                            <option value="{{ t.id }}" {{ data.trade == t.id ~ '' ? 'selected' }}>{{ t.name }} ({{ t.claimId }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            {% endif %}
+
+            <label for="message">Message (optional)</label>
+            <textarea class="input" id="message" name="message" rows="3" maxlength="500" placeholder="Say hello to the seller">{{ data.message }}</textarea>
+
+            <p class="muted">Your offer stays open for 7 days. Nothing changes hands until both of you confirm the handover.</p>
+            <button class="btn btn--primary" type="submit">Send offer</button>
+        </form>
+    </div>
+{% endblock %}

@@ -20,7 +20,16 @@
     <div class="main-wrapper" id="mainWrapper">
         {% include 'partials/_topbar.html.twig' %}
 
-        <main class="content p-4">
+        <main class="content p-3 p-md-4">
+            {% for type in ['success', 'error'] %}
+                {% for message in app.flashes(type) %}
+                    <div class="alert alert-{{ type == 'error' ? 'danger' : 'success' }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
             {% block body %}{% endblock %}
         </main>
 
@@ -31,6 +40,11 @@
     <script>
         document.getElementById('sidebarToggle').addEventListener('click', function () {
             document.body.classList.toggle('sidebar-collapsed');
+        });
+        document.querySelectorAll('[data-confirm]').forEach(function (form) {
+            form.addEventListener('submit', function (e) {
+                if (!confirm(form.getAttribute('data-confirm'))) { e.preventDefault(); }
+            });
         });
     </script>
     {% block javascripts %}{% endblock %}

@@ -176,3 +176,12 @@ a { color: inherit; }
     .auth__panel { padding: 28px 24px; }
     .auth__pitch, .auth__copy { display: none; }
 }
+/* ---------- Added: forgot password, terms line, info alert ---------- */
+.auth__forgot { text-align: right; margin: -4px 0 14px; font-size: .85rem; }
+.auth__forgot a, .auth__terms a { text-decoration: underline; text-underline-offset: 3px; }
+.auth__terms { font-size: .8rem; color: #5E6E6B; margin: 4px 0 14px; }
+.alert--info { background: #E3EAE4; color: #0F3D3E; border: 1px solid #c9d6cc; word-break: break-word; }
+.alert--info a { text-decoration: underline; font-weight: 600; }
+@media (max-width: 480px) {
+    .auth__card { padding: 28px 20px; }
+}

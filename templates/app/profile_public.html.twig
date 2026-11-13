@@ -1,0 +1,68 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}{{ member.fullName }} | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Member profile</p>
+
+    <div class="panel profilehead">
+        <div class="avatar avatar--lg">
+            {% if member.avatar %}
+                <img src="{{ asset(member.avatar) }}" alt="{{ member.fullName }}">
+            {% else %}
+                <span>{{ member.fullName|slice(0, 1)|upper }}</span>
+            {% endif %}
+        </div>
+
+        <div>
+            <h1>{{ member.fullName }}</h1>
+            {% if member.business %}<p class="muted">{{ member.business }}</p>{% endif %}
+            <p>
+                {% if verified %}<span class="badge badge--completed"><i class="bi bi-patch-check-fill"></i> Verified trader</span>{% endif %}
+                {% if rating.count %}
+                    <span class="stars">{{ rating.average|stars }}</span> {{ rating.average|number_format(1) }} ({{ rating.count }})
+                {% else %}
+                    <span class="muted">No reviews yet</span>
+                {% endif %}
+            </p>
+            <p class="muted">Member since {{ member.createdAt|date('F Y') }}</p>
+            {% if member.bio %}<p>{{ member.bio|nl2br }}</p>{% endif %}
+
+            {% if isMe %}
+                <a class="btn btn--ghost btn--sm" href="{{ path('profile') }}">Edit my profile</a>
+            {% else %}
+                <form method="post" action="{{ path('profile_block', {id: member.id, action: blockedByMe ? 'unblock' : 'block'}) }}" {% if not blockedByMe %}data-confirm="Block this user? Neither of you will be able to message or trade."{% endif %}>
+                    <input type="hidden" name="_token" value="{{ csrf_token('block_' ~ member.id) }}">
+                    <button class="btn btn--ghost btn--sm" type="submit">{{ blockedByMe ? 'Unblock user' : 'Block user' }}</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <h2 class="section-title"><span>Active</span>Listings</h2>
+    {% if listings is empty %}
+        <div class="empty"><p>No public listings right now.</p></div>
+    {% else %}
+        <div class="grid">
+            {% for item in listings %}
+                {% include 'app/_item_card.html.twig' with {item: item, mode: 'market'} %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h2 class="section-title"><span>Feedback</span>Reviews</h2>
+    {% if reviews is empty %}
+        <div class="empty"><p>No reviews yet.</p></div>
+    {% else %}
+        <div class="stack">
+            {% for review in reviews %}
+                <article class="offer">
+                    <div class="offer__main">
+                        <p><span class="stars">{{ review.rating|stars }}</span> by {{ review.reviewer.fullName }} · {{ review.createdAt|date('d M Y') }}</p>
+                        {% if review.comment %}<p class="offer__msg">&ldquo;{{ review.comment }}&rdquo;</p>{% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endblock %}

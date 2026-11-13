@@ -4,8 +4,13 @@ namespace App\Controller;
 
 use App\Entity\Item;
 use App\Entity\Offer;
+use App\Entity\Review;
+use App\Entity\User;
 use App\Repository\ItemRepository;
 use App\Repository\OfferRepository;
+use App\Repository\ReviewRepository;
+use App\Service\OfferService;
+use App\Service\TrustService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,175 +26,236 @@ class MarketplaceController extends AbstractController
         if (!in_array($filter, ['all', 'sale', 'lost'], true)) {
             $filter = 'all';
         }
-
-        $q = trim((string) $request->query->get('q', ''));
         $category = (string) $request->query->get('category', '');
         if (!in_array($category, Item::CATEGORIES, true)) {
             $category = '';
         }
+        $q = mb_substr(trim((string) $request->query->get('q', '')), 0, 80);
+
+        $result = $items->searchMarketplace($filter, $q, $category, $request->query->getInt('page', 1));
 
         return $this->render('app/marketplace.html.twig', [
-            'items' => $items->findForMarketplace($filter, $q, $category),
+            'items' => $result['items'],
+            'total' => $result['total'],
+            'pages' => $result['pages'],
+            'page' => $result['page'],
             'filter' => $filter,
-            'q' => $q,
             'category' => $category,
+            'q' => $q,
             'categories' => Item::CATEGORIES,
         ]);
     }
 
-    #[Route('/marketplace/{id}/offer', name: 'offer_make', methods: ['POST'], requirements: ['id' => '\d+'])]
-    public function makeOffer(Item $item, Request $request, EntityManagerInterface $em, OfferRepository $offers): Response
+    #[Route('/marketplace/{id}', name: 'listing_show', requirements: ['id' => '\d+'])]
+    public function listing(Item $item, TrustService $trust, OfferRepository $offers): Response
     {
+        /** @var User $user */
         $user = $this->getUser();
+        $isOwner = $item->owner?->getId() === $user->getId();
 
-        if (!$this->isCsrfTokenValid('offer_item_' . $item->id, (string) $request->request->get('_token'))) {
-            return $this->back('marketplace', 'error', 'Your session expired. Please try again.');
-        }
-        if ($item->status !== Item::STATUS_FOR_SALE) {
-            return $this->back('marketplace', 'error', 'This item is no longer for sale.');
-        }
-        if ($item->owner->getId() === $user->getId()) {
-            return $this->back('marketplace', 'error', 'You cannot make an offer on your own item.');
+        if (!$item->isPublic() && !$isOwner) {
+            throw $this->createNotFoundException();
         }
 
-        $amount = str_replace(',', '', trim((string) $request->request->get('amount')));
-        if (!is_numeric($amount) || (float) $amount <= 0 || (float) $amount > 99999999) {
-            return $this->back('marketplace', 'error', 'Please enter a valid offer amount.');
-        }
-
-        if ($offers->findOneBy(['item' => $item, 'buyer' => $user, 'status' => Offer::PENDING])) {
-            return $this->back('offers', 'error', 'You already have a pending offer on this item.');
-        }
-
-        $offer = new Offer();
-        $offer->item = $item;
-        $offer->buyer = $user;
-        $offer->seller = $item->owner;
-        $offer->amount = number_format((float) $amount, 2, '.', '');
-        $offer->message = mb_substr(trim((string) $request->request->get('message')), 0, 500) ?: null;
-
-        $em->persist($offer);
-        $em->flush();
-
-        return $this->back('offers', 'success', 'Offer sent. The seller will see it in their Offers page.');
-    }
-
-    #[Route('/offers', name: 'offers')]
-    public function offers(OfferRepository $offers): Response
-    {
-        $user = $this->getUser();
-
-        return $this->render('app/offers.html.twig', [
-            'received' => $offers->findBy(['seller' => $user], ['id' => 'DESC']),
-            'made' => $offers->findBy(['buyer' => $user], ['id' => 'DESC']),
+        return $this->render('app/listing_show.html.twig', [
+            'item' => $item,
+            'isOwner' => $isOwner,
+            'blocked' => !$isOwner && $trust->isBlocked($user, $item->owner),
+            'verified' => $trust->isVerified($item->owner),
+            'rating' => $trust->rating($item->owner),
+            'pending' => $isOwner ? null : $offers->findPendingFor($item, $user),
         ]);
     }
 
-    #[Route(
-        '/offers/{id}/{action}',
-        name: 'offer_action',
-        methods: ['POST'],
-        requirements: ['id' => '\d+', 'action' => 'accept|decline|cancel|confirm'],
-    )]
-    public function action(Offer $offer, string $action, Request $request, EntityManagerInterface $em, OfferRepository $offers): Response
+    #[Route('/marketplace/{id}/offer', name: 'offer_new', methods: ['GET', 'POST'], requirements: ['id' => '\d+'])]
+    public function newOffer(Item $item, Request $request, OfferService $offerService, ItemRepository $items, TrustService $trust, OfferRepository $offers): Response
     {
+        /** @var User $user */
         $user = $this->getUser();
-        $isSeller = $offer->seller->getId() === $user->getId();
-        $isBuyer = $offer->buyer->getId() === $user->getId();
 
-        if (!$isSeller && !$isBuyer) {
-            throw $this->createAccessDeniedException();
+        if ($item->status !== Item::STATUS_FOR_SALE) {
+            $this->addFlash('error', 'That listing is no longer available for offers.');
+
+            return $this->redirectToRoute('marketplace');
         }
-        if (!$this->isCsrfTokenValid('offer_' . $offer->id, (string) $request->request->get('_token'))) {
-            return $this->back('offers', 'error', 'Your session expired. Please try again.');
+        if ($item->owner?->getId() === $user->getId()) {
+            $this->addFlash('error', 'You cannot make an offer on your own item.');
+
+            return $this->redirectToRoute('marketplace');
+        }
+        if ($trust->isBlocked($user, $item->owner)) {
+            $this->addFlash('error', 'You cannot make an offer to this user.');
+
+            return $this->redirectToRoute('marketplace');
+        }
+        if ($offers->findPendingFor($item, $user)) {
+            $this->addFlash('success', 'You already have a pending offer on this item.');
+
+            return $this->redirectToRoute('offers');
         }
 
-        $item = $offer->item;
-        $open = [Offer::PENDING, Offer::ACCEPTED];
+        $tradeable = $items->findTradeable($user, $item);
+        $errors = [];
+        $data = ['amount' => $item->price, 'trade' => '', 'message' => '', 'mode' => 'cash'];
 
-        switch ($action) {
-            case 'accept':
-                if (!$isSeller
-                    || $offer->status !== Offer::PENDING
-                    || $item->status !== Item::STATUS_FOR_SALE
-                    || $item->owner->getId() !== $offer->seller->getId()) {
-                    return $this->back('offers', 'error', 'This offer can no longer be accepted.');
-                }
-                $offer->status = Offer::ACCEPTED;
-                foreach ($offers->findBy(['item' => $item, 'status' => Offer::PENDING]) as $other) {
-                    if ($other !== $offer) {
-                        $other->status = Offer::DECLINED;
+        if ($request->isMethod('POST')) {
+            $data['mode'] = (string) $request->request->get('mode', 'cash');
+            $data['amount'] = str_replace(',', '', trim((string) $request->request->get('amount', '0')));
+            $data['trade'] = (string) $request->request->get('trade', '');
+            $data['message'] = trim((string) $request->request->get('message', ''));
+
+            if (!$this->isCsrfTokenValid('offer_' . $item->id, (string) $request->request->get('_token'))) {
+                $errors[] = 'Your session expired. Please try again.';
+            }
+            if ($data['amount'] === '') {
+                $data['amount'] = '0';
+            }
+            if (!is_numeric($data['amount']) || (float) $data['amount'] < 0) {
+                $errors[] = 'Enter a valid cash amount.';
+            }
+            if (mb_strlen($data['message']) > 500) {
+                $errors[] = 'Your message can be up to 500 characters.';
+            }
+
+            $trade = null;
+            if ($data['mode'] !== 'cash' && $data['trade'] !== '') {
+                foreach ($tradeable as $candidate) {
+                    if ((string) $candidate->id === $data['trade']) {
+                        $trade = $candidate;
                     }
                 }
-                $message = 'Offer accepted. Ownership moves only after both of you confirm the handover.';
-                break;
-
-            case 'decline':
-                if (!$isSeller || $offer->status !== Offer::PENDING) {
-                    return $this->back('offers', 'error', 'This offer cannot be declined.');
+                if (!$trade) {
+                    $errors[] = 'Choose one of your own available items to trade.';
                 }
-                $offer->status = Offer::DECLINED;
-                $message = 'Offer declined.';
-                break;
+            }
+            if ($data['mode'] === 'trade') {
+                $data['amount'] = '0';
+            }
 
-            case 'cancel':
-                $allowed = ($isBuyer && in_array($offer->status, $open, true))
-                    || ($isSeller && $offer->status === Offer::ACCEPTED);
-                if (!$allowed) {
-                    return $this->back('offers', 'error', 'This offer cannot be cancelled.');
+            if (!$errors) {
+                try {
+                    $offerService->create($item, $user, $data['amount'], $trade, $data['message']);
+                    $this->addFlash('success', sprintf('Offer sent to %s. It expires in %d days if they do not respond.', $item->owner->getFullName(), Offer::VALID_DAYS));
+
+                    return $this->redirectToRoute('offers');
+                } catch (\DomainException $e) {
+                    $errors[] = $e->getMessage();
                 }
-                $offer->status = Offer::CANCELLED;
-                $message = 'Offer cancelled.';
-                break;
-
-            case 'confirm':
-                if ($offer->status !== Offer::ACCEPTED) {
-                    return $this->back('offers', 'error', 'This offer is not waiting for a handover.');
-                }
-                if ($item->owner->getId() !== $offer->seller->getId()) {
-                    $offer->status = Offer::CANCELLED;
-                    $em->flush();
-
-                    return $this->back('offers', 'error', 'The seller no longer owns this item, so the offer was cancelled.');
-                }
-
-                if ($isSeller) {
-                    $offer->sellerConfirmed = true;
-                }
-                if ($isBuyer) {
-                    $offer->buyerConfirmed = true;
-                }
-
-                if ($offer->sellerConfirmed && $offer->buyerConfirmed) {
-                    $item->owner = $offer->buyer;
-                    $item->status = Item::STATUS_OWNED;
-                    $item->price = null;
-                    $offer->status = Offer::COMPLETED;
-
-                    foreach ($offers->findBy(['item' => $item, 'status' => $open]) as $other) {
-                        if ($other !== $offer) {
-                            $other->status = Offer::CANCELLED;
-                        }
-                    }
-                    $message = 'Handover complete. Ownership has been transferred.';
-                } else {
-                    $message = 'Your confirmation was saved. Waiting for the other side.';
-                }
-                break;
-
-            default:
-                return $this->back('offers', 'error', 'Unknown action.');
+            }
         }
 
-        $em->flush();
-
-        return $this->back('offers', 'success', $message);
+        return $this->render('app/offer_new.html.twig', [
+            'item' => $item,
+            'tradeable' => $tradeable,
+            'errors' => $errors,
+            'data' => $data,
+        ]);
     }
 
-    private function back(string $route, string $type, string $message): Response
+    #[Route('/offers', name: 'offers')]
+    public function offers(OfferRepository $offers, ReviewRepository $reviews): Response
     {
-        $this->addFlash($type, $message);
+        /** @var User $user */
+        $user = $this->getUser();
+        $offers->expireDue();
 
-        return $this->redirectToRoute($route);
+        $made = $offers->findBy(['buyer' => $user], ['id' => 'DESC']);
+        $received = $offers->findBy(['seller' => $user], ['id' => 'DESC']);
+
+        $reviewed = [];
+        foreach ($reviews->findBy(['reviewer' => $user]) as $review) {
+            $reviewed[$review->offer->id] = true;
+        }
+
+        return $this->render('app/offers.html.twig', [
+            'made' => $made,
+            'received' => $received,
+            'reviewed' => $reviewed,
+        ]);
+    }
+
+    #[Route('/offers/{id}/{action}', name: 'offer_action', methods: ['POST'], requirements: ['id' => '\d+', 'action' => 'accept|decline|withdraw|cancel|confirm|dispute'])]
+    public function act(Offer $offer, string $action, Request $request, OfferService $offerService, OfferRepository $offers): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$this->isCsrfTokenValid('offer_' . $offer->id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Your session expired. Please try again.');
+
+            return $this->redirectToRoute('offers');
+        }
+
+        $offers->expireDue();
+
+        try {
+            $this->addFlash('success', $offerService->apply($offer, $user, $action));
+        } catch (\DomainException $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('offers');
+    }
+
+    #[Route('/offers/{id}/meetup', name: 'offer_meetup', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function meetup(Offer $offer, Request $request, OfferService $offerService): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if ($this->isCsrfTokenValid('offer_' . $offer->id, (string) $request->request->get('_token'))) {
+            try {
+                $offerService->setMeetupNote($offer, $user, (string) $request->request->get('note', ''));
+                $this->addFlash('success', 'Meetup note saved.');
+            } catch (\DomainException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('offers');
+    }
+
+    #[Route('/offers/{id}/review', name: 'offer_review', methods: ['POST'], requirements: ['id' => '\d+'])]
+    public function review(Offer $offer, Request $request, EntityManagerInterface $em, ReviewRepository $reviews): Response
+    {
+        /** @var User $user */
+        $user = $this->getUser();
+
+        if (!$this->isCsrfTokenValid('review_' . $offer->id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Your session expired. Please try again.');
+
+            return $this->redirectToRoute('offers');
+        }
+        if ($offer->status !== Offer::COMPLETED || !$offer->involves($user)) {
+            $this->addFlash('error', 'You can only review a completed deal you took part in.');
+
+            return $this->redirectToRoute('offers');
+        }
+
+        $rating = $request->request->getInt('rating');
+        if ($rating < 1 || $rating > 5) {
+            $this->addFlash('error', 'Choose a rating from 1 to 5 stars.');
+
+            return $this->redirectToRoute('offers');
+        }
+        if ($reviews->findOneBy(['offer' => $offer, 'reviewer' => $user])) {
+            $this->addFlash('error', 'You already reviewed this deal.');
+
+            return $this->redirectToRoute('offers');
+        }
+
+        $comment = trim((string) $request->request->get('comment', ''));
+        $review = new Review();
+        $review->offer = $offer;
+        $review->reviewer = $user;
+        $review->reviewee = $offer->seller->getId() === $user->getId() ? $offer->buyer : $offer->seller;
+        $review->rating = $rating;
+        $review->comment = $comment === '' ? null : mb_substr($comment, 0, 500);
+        $em->persist($review);
+        $em->flush();
+
+        $this->addFlash('success', 'Thanks for the review.');
+
+        return $this->redirectToRoute('offers');
     }
 }

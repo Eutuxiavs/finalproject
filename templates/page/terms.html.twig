@@ -1,0 +1,30 @@
+{% extends 'app/base_app.html.twig' %}
+
+{% block title %}Terms of Use | Yonzon{% endblock %}
+
+{% block content %}
+    <p class="eyebrow">Last updated {{ 'now'|date('F Y') }}</p>
+    <h1>Terms of Use.</h1>
+
+    <div class="panel prose">
+        <p>Yonzon is a school project: an ownership registry and marketplace where people record what they own, list items for sale or trade, and report lost items. By using it you agree to the points below.</p>
+
+        <h2>1. Your account</h2>
+        <p>Give accurate information and keep your password private. You are responsible for what happens under your account. Suspended accounts cannot log in.</p>
+
+        <h2>2. What you can list</h2>
+        <p>Only register and list items that you own or are allowed to sell. Do not list stolen, illegal or counterfeit goods. Listings need a real photo of the actual item.</p>
+
+        <h2>3. Deals between users</h2>
+        <p>Yonzon connects buyers and sellers but is not a party to any deal. Ownership in the registry only changes after both people confirm the handover. Meet in a safe public place and agree on payment yourselves. Yonzon does not process payments or hold funds.</p>
+
+        <h2>4. Fees</h2>
+        <p>A 5% platform fee is recorded on completed cash deals, and featuring a listing has a flat fee. In this demo these fees are simulated and no real money is charged.</p>
+
+        <h2>5. Conduct</h2>
+        <p>Be respectful. Harassment, scams and misleading listings can be reported and may lead to removal of the listing or suspension of the account.</p>
+
+        <h2>6. Changes</h2>
+        <p>These terms may change as the project develops.</p>
+    </div>
+{% endblock %}

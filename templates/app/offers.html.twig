@@ -11,7 +11,7 @@
         Ownership only moves once <strong>both</strong> sides separately click "Confirm handover complete",
         meaning after the exchange actually happened. Neither side can force a transfer alone, and either
         side can cancel before that point. Meet in a safe public place for in-person handoffs, and never
-        send payment before agreeing on the method with the other person.
+        send payment before agreeing on the method with the other person. A 5% platform fee applies to completed cash deals.
     </div>
 
     <h2 class="section-title"><span>As the seller</span>Offers you've received</h2>
@@ -20,7 +20,7 @@
     {% else %}
         <div class="stack">
             {% for offer in received %}
-                {% include 'app/_offer_row.html.twig' with {offer: offer, role: 'seller'} %}
+                {% include 'app/_offer_row.html.twig' with {offer: offer, role: 'seller', reviewed: reviewed} %}
             {% endfor %}
         </div>
     {% endif %}
@@ -34,7 +34,7 @@
     {% else %}
         <div class="stack">
             {% for offer in made %}
-                {% include 'app/_offer_row.html.twig' with {offer: offer, role: 'buyer'} %}
+                {% include 'app/_offer_row.html.twig' with {offer: offer, role: 'buyer', reviewed: reviewed} %}
             {% endfor %}
         </div>
     {% endif %}

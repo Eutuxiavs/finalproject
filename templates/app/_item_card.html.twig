@@ -1,100 +1,102 @@
 {% set mine = app.user and item.owner.id == app.user.id %}
+{% set featured = item.featuredNow %}
 
-<article class="item">
+<article class="item {{ featured ? 'item--featured' }}">
     <div class="item__img">
-        {% if item.photo %}
-            <img src="{{ asset(item.photo) }}" alt="{{ item.name }}">
-        {% else %}
-            <i class="bi bi-image"></i>
-        {% endif %}
+        <a href="{{ path(mine and mode != 'market' ? 'item_show' : 'listing_show', {id: item.id}) }}" class="item__imglink" aria-label="{{ item.name }}">
+            {% if item.photo %}
+                <img src="{{ asset(item.photo) }}" alt="{{ item.name }}" loading="lazy">
+            {% else %}
+                <i class="bi bi-image"></i>
+            {% endif %}
+        </a>
 
-        {% if item.status == 'for_sale' %}
+        {% if featured %}
+            <span class="tag tag--featured"><i class="bi bi-star-fill"></i> Featured</span>
+        {% elseif item.status == 'for_sale' %}
             <span class="tag tag--sale">For sale</span>
+        {% elseif item.status == 'reserved' %}
+            <span class="tag tag--reserved">Reserved</span>
         {% elseif item.status == 'lost' %}
             <span class="tag tag--lost">Lost</span>
         {% endif %}
 
-        {% if item.status == 'for_sale' and item.price %}
+        {% if item.status in ['for_sale', 'reserved'] and item.price %}
             <span class="price">${{ item.price|number_format(2) }}</span>
         {% endif %}
     </div>
 
     <div class="item__body">
         <span class="item__cat">{{ item.category }}</span>
-        <h3>{{ item.name }}</h3>
+        <h3><a href="{{ path(mine and mode != 'market' ? 'item_show' : 'listing_show', {id: item.id}) }}">{{ item.name }}</a></h3>
 
         <div class="item__meta">
             <span>{{ item.claimId }}</span>
-            <span class="badge badge--{{ item.status }}">
-                {{ item.status == 'for_sale' ? 'For sale' : (item.status == 'lost' ? 'Lost' : 'Owned') }}
-            </span>
+            <span class="badge badge--{{ item.status }}">{{ item.status|status_label }}</span>
         </div>
 
         {% if mode == 'market' %}
-            <p class="item__by">By {{ item.owner.fullName }}{% if item.city %} · {{ item.city }}{% endif %}</p>
+            <p class="item__by">By <a href="{{ path('profile_public', {id: item.owner.id}) }}">{{ item.owner.fullName }}</a>{% if item.city %} · {{ item.city }}{% endif %}</p>
 
-            {% if mine %}
-                <a class="btn btn--ghost btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">Your listing: manage</a>
-            {% elseif item.status == 'for_sale' %}
-                <details class="offerbox">
-                    <summary class="btn btn--primary btn--sm btn--block">Make offer</summary>
-                    <form method="post" action="{{ path('offer_make', {id: item.id}) }}">
-                        <input type="hidden" name="_token" value="{{ csrf_token('offer_item_' ~ item.id) }}">
-                        <label>Your offer ($)</label>
-                        <input class="input" type="number" name="amount" min="1" step="0.01" value="{{ item.price }}" required>
-                        <label>Message (optional)</label>
-                        <textarea class="input" name="message" rows="2" maxlength="500" placeholder="Say hello to the seller"></textarea>
-                        <button type="submit" class="btn btn--accent btn--sm btn--block">Send offer</button>
-                    </form>
-                </details>
-            {% else %}
-                <p class="item__lost">Reported lost by its owner.</p>
-            {% endif %}
+            <div class="item__actions">
+                {% if mine %}
+                    <a class="btn btn--ghost btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">Your listing: manage</a>
+                {% elseif item.status == 'for_sale' %}
+                    <a class="btn btn--primary btn--sm btn--block" href="{{ path('offer_new', {id: item.id}) }}">Make offer</a>
+                    <a class="btn btn--ghost btn--sm btn--block" href="{{ path('message_start', {id: item.id}) }}">Message seller</a>
+                {% elseif item.status == 'reserved' %}
+                    <p class="item__lost">A deal is in progress for this item.</p>
+                {% else %}
+                    <a class="btn btn--ghost btn--sm btn--block" href="{{ path('message_start', {id: item.id}) }}">I may have found it</a>
+                {% endif %}
+            </div>
         {% else %}
             {% set token = csrf_token('item_' ~ item.id) %}
             {% set updateUrl = path('item_update', {id: item.id}) %}
 
-            {% if item.status == 'owned' %}
-                <details class="offerbox">
-                    <summary class="btn btn--primary btn--sm btn--block">List for sale</summary>
+            <div class="item__actions">
+                {% if item.status == 'owned' %}
+                    {% if item.photo %}
+                        <details class="offerbox">
+                            <summary class="btn btn--primary btn--sm btn--block">List for sale</summary>
+                            <form method="post" action="{{ updateUrl }}">
+                                <input type="hidden" name="_token" value="{{ token }}">
+                                <input type="hidden" name="action" value="sell">
+                                <input type="hidden" name="back" value="registry">
+                                <label for="price-{{ item.id }}">Asking price ($)</label>
+                                <input class="input" id="price-{{ item.id }}" type="number" name="price" min="1" step="0.01" placeholder="e.g. 450.00" required>
+                                <button type="submit" class="btn btn--accent btn--sm btn--block">List on marketplace</button>
+                            </form>
+                        </details>
+                    {% else %}
+                        <a class="btn btn--primary btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">Add a photo to list it</a>
+                    {% endif %}
                     <form method="post" action="{{ updateUrl }}">
                         <input type="hidden" name="_token" value="{{ token }}">
-                        <input type="hidden" name="action" value="sell">
+                        <input type="hidden" name="action" value="lost">
                         <input type="hidden" name="back" value="registry">
-                        <label>Asking price ($)</label>
-                        <input class="input" type="number" name="price" min="1" step="0.01" placeholder="e.g. 450.00" required>
-                        <button type="submit" class="btn btn--accent btn--sm btn--block">List on marketplace</button>
+                        <button type="submit" class="btn btn--ghost btn--sm btn--block">Report lost</button>
                     </form>
-                </details>
-                <form method="post" action="{{ updateUrl }}">
-                    <input type="hidden" name="_token" value="{{ token }}">
-                    <input type="hidden" name="action" value="lost">
-                    <input type="hidden" name="back" value="registry">
-                    <button type="submit" class="btn btn--ghost btn--sm btn--block">Report lost</button>
-                </form>
-            {% elseif item.status == 'for_sale' %}
-                <form method="post" action="{{ updateUrl }}">
-                    <input type="hidden" name="_token" value="{{ token }}">
-                    <input type="hidden" name="action" value="unlist">
-                    <input type="hidden" name="back" value="registry">
-                    <button type="submit" class="btn btn--ghost btn--sm btn--block">Move back to inventory</button>
-                </form>
-                <form method="post" action="{{ updateUrl }}">
-                    <input type="hidden" name="_token" value="{{ token }}">
-                    <input type="hidden" name="action" value="lost">
-                    <input type="hidden" name="back" value="registry">
-                    <button type="submit" class="btn btn--ghost btn--sm btn--block">Report lost</button>
-                </form>
-            {% else %}
-                <form method="post" action="{{ updateUrl }}">
-                    <input type="hidden" name="_token" value="{{ token }}">
-                    <input type="hidden" name="action" value="found">
-                    <input type="hidden" name="back" value="registry">
-                    <button type="submit" class="btn btn--primary btn--sm btn--block">I found it</button>
-                </form>
-            {% endif %}
+                {% elseif item.status == 'for_sale' %}
+                    <form method="post" action="{{ updateUrl }}">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="unlist">
+                        <input type="hidden" name="back" value="registry">
+                        <button type="submit" class="btn btn--ghost btn--sm btn--block">Move back to inventory</button>
+                    </form>
+                {% elseif item.status == 'reserved' %}
+                    <a class="btn btn--accent btn--sm btn--block" href="{{ path('offers') }}">Deal in progress: open offers</a>
+                {% else %}
+                    <form method="post" action="{{ updateUrl }}">
+                        <input type="hidden" name="_token" value="{{ token }}">
+                        <input type="hidden" name="action" value="found">
+                        <input type="hidden" name="back" value="registry">
+                        <button type="submit" class="btn btn--primary btn--sm btn--block">I found it</button>
+                    </form>
+                {% endif %}
 
-            <a class="btn btn--ghost btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">View record</a>
+                <a class="btn btn--ghost btn--sm btn--block" href="{{ path('item_show', {id: item.id}) }}">View record</a>
+            </div>
         {% endif %}
     </div>
 </article>

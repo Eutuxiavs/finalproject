@@ -5,7 +5,11 @@ namespace App\Controller;
 use App\Entity\Item;
 use App\Entity\User;
 use App\Repository\ItemRepository;
+use App\Entity\Block;
+use App\Repository\ReviewRepository;
 use App\Service\ImageUploader;
+use App\Service\OfferService;
+use App\Service\TrustService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -53,6 +57,7 @@ class ProfileController extends AbstractController
                 $user->setBio($bio ?: null);
 
                 if ($file) {
+                    $uploader->delete($user->getAvatar());
                     $user->setAvatar($uploader->save($file, 'avatars'));
                 }
 
@@ -81,6 +86,9 @@ class ProfileController extends AbstractController
         EntityManagerInterface $em,
         UserPasswordHasherInterface $hasher,
         TokenStorageInterface $tokenStorage,
+        OfferService $offerService,
+        ImageUploader $uploader,
+        ItemRepository $items,
     ): Response {
         /** @var User $user */
         $user = $this->getUser();
@@ -97,6 +105,12 @@ class ProfileController extends AbstractController
             return $this->redirectToRoute('profile');
         }
 
+        $offerService->cancelAllFor($user);
+        foreach ($items->findBy(['owner' => $user]) as $item) {
+            $uploader->delete($item->photo);
+        }
+        $uploader->delete($user->getAvatar());
+
         $em->remove($user);
         $em->flush();
 
@@ -104,5 +118,53 @@ class ProfileController extends AbstractController
         $request->getSession()->invalidate();
 
         return $this->redirectToRoute('app_home');
+    }
+
+    #[Route('/u/{id}', name: 'profile_public', requirements: ['id' => '\d+'])]
+    public function publicProfile(User $member, ItemRepository $items, ReviewRepository $reviews, TrustService $trust): Response
+    {
+        /** @var User $me */
+        $me = $this->getUser();
+        $isMe = $member->getId() === $me->getId();
+
+        return $this->render('app/profile_public.html.twig', [
+            'member' => $member,
+            'isMe' => $isMe,
+            'listings' => $items->findPublicByOwner($member),
+            'reviews' => $reviews->latestFor($member),
+            'rating' => $trust->rating($member),
+            'verified' => $trust->isVerified($member),
+            'blockedByMe' => !$isMe && $trust->hasBlocked($me, $member),
+        ]);
+    }
+
+    #[Route('/u/{id}/{action}', name: 'profile_block', methods: ['POST'], requirements: ['id' => '\d+', 'action' => 'block|unblock'])]
+    public function block(User $member, string $action, Request $request, EntityManagerInterface $em): Response
+    {
+        /** @var User $me */
+        $me = $this->getUser();
+
+        if (!$this->isCsrfTokenValid('block_' . $member->getId(), (string) $request->request->get('_token')) || $member->getId() === $me->getId()) {
+            $this->addFlash('error', 'That action could not be completed.');
+
+            return $this->redirectToRoute('marketplace');
+        }
+
+        $repo = $em->getRepository(Block::class);
+        $existing = $repo->findOneBy(['blocker' => $me, 'blocked' => $member]);
+
+        if ($action === 'block' && !$existing) {
+            $block = new Block();
+            $block->blocker = $me;
+            $block->blocked = $member;
+            $em->persist($block);
+            $this->addFlash('success', 'User blocked. You cannot message each other or trade until you unblock them.');
+        } elseif ($action === 'unblock' && $existing) {
+            $em->remove($existing);
+            $this->addFlash('success', 'User unblocked.');
+        }
+        $em->flush();
+
+        return $this->redirectToRoute('profile_public', ['id' => $member->getId()]);
     }
 }

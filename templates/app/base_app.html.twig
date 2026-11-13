@@ -13,28 +13,43 @@
 </head>
 <body>
 {% set r = app.request.attributes.get('_route') %}
+{% set counts = app.user ? nav_counts() : {offers: 0, messages: 0} %}
 
 <header class="topnav">
     <div class="wrap topnav__inner">
-        <a href="{{ path('user_registry') }}" class="brand">
+        <a href="{{ app.user ? path('user_registry') : path('app_home') }}" class="brand">
             <img src="{{ asset('images/logo.png') }}" alt="Yonzon logo">
             <span>YONZON</span>
         </a>
 
-        <nav class="topnav__links">
-            <a class="{{ r in ['user_registry', 'item_new', 'item_show'] ? 'is-active' }}" href="{{ path('user_registry') }}">Dashboard</a>
-            <a class="{{ r == 'marketplace' ? 'is-active' }}" href="{{ path('marketplace') }}">Marketplace</a>
-            <a class="{{ r == 'offers' ? 'is-active' }}" href="{{ path('offers') }}">Offers</a>
-            <a class="{{ r == 'profile' ? 'is-active' }}" href="{{ path('profile') }}">Profile</a>
-        </nav>
+        {% if app.user %}
+            <button class="nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false" data-nav-toggle>
+                <i class="bi bi-list"></i>
+            </button>
 
-        <div class="topnav__user">
-            {% if is_granted('ROLE_ADMIN') %}
-                <a href="{{ path('app_dashboard') }}" class="topnav__admin">Admin</a>
-            {% endif %}
-            <span class="topnav__name">{{ app.user.fullName }}</span>
-            <a class="btn btn--ghost btn--sm" href="{{ path('app_logout') }}">Log out</a>
-        </div>
+            <div class="topnav__panel" data-nav-panel>
+                <nav class="topnav__links">
+                    <a class="{{ r in ['user_registry', 'item_new', 'item_show'] ? 'is-active' }}" href="{{ path('user_registry') }}">Dashboard</a>
+                    <a class="{{ r in ['marketplace', 'listing_show', 'offer_new', 'report_new'] ? 'is-active' }}" href="{{ path('marketplace') }}">Marketplace</a>
+                    <a class="{{ r == 'offers' ? 'is-active' }}" href="{{ path('offers') }}">Offers{% if counts.offers %}<span class="count-badge">{{ counts.offers }}</span>{% endif %}</a>
+                    <a class="{{ r == 'messages' ? 'is-active' }}" href="{{ path('messages') }}">Messages{% if counts.messages %}<span class="count-badge">{{ counts.messages }}</span>{% endif %}</a>
+                    <a class="{{ r in ['profile', 'profile_public'] ? 'is-active' }}" href="{{ path('profile') }}">Profile</a>
+                </nav>
+
+                <div class="topnav__user">
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <a href="{{ path('app_dashboard') }}" class="topnav__admin">Admin</a>
+                    {% endif %}
+                    <span class="topnav__name">{{ app.user.fullName }}</span>
+                    <a class="btn btn--ghost btn--sm" href="{{ path('app_logout') }}">Log out</a>
+                </div>
+            </div>
+        {% else %}
+            <div class="topnav__user">
+                <a class="btn btn--ghost btn--sm" href="{{ path('app_login') }}">Log in</a>
+                <a class="btn btn--primary btn--sm" href="{{ path('app_register') }}">Register</a>
+            </div>
+        {% endif %}
     </div>
 </header>
 
@@ -42,7 +57,7 @@
     <div class="wrap">
         {% for type in ['success', 'error'] %}
             {% for message in app.flashes(type) %}
-                <div class="flash flash--{{ type }}">{{ message }}</div>
+                <div class="flash flash--{{ type }}" role="status">{{ message }}</div>
             {% endfor %}
         {% endfor %}
 
@@ -51,8 +66,15 @@
 </main>
 
 <footer class="appfoot">
-    <div class="wrap">&copy; {{ 'now'|date('Y') }} Yonzon Claim Registry</div>
+    <div class="wrap appfoot__inner">
+        <span>&copy; {{ 'now'|date('Y') }} Yonzon Claim Registry</span>
+        <span class="appfoot__links">
+            <a href="{{ path('page_terms') }}">Terms</a>
+            <a href="{{ path('page_privacy') }}">Privacy</a>
+        </span>
+    </div>
 </footer>
 
+<script src="{{ asset('js/app.js') }}" defer></script>
 </body>
 </html>
