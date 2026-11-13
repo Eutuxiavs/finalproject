@@ -22,8 +22,12 @@ class ImageUploader
 
     public function validate(UploadedFile $file): ?string
     {
-        if (!$file->isValid()) {
-            return 'The photo could not be uploaded. Please try a smaller image.';
+                if (!$file->isValid()) {
+            if (in_array($file->getError(), [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+                return 'That photo is larger than the server allows. Try one under 5 MB.';
+            }
+
+            return 'The photo could not be uploaded. Please try again.';
         }
 
         if ($file->getSize() > 5 * 1024 * 1024) {
@@ -76,7 +80,8 @@ class ImageUploader
         }
 
         $size = @getimagesize($path);
-        if (!$size || $size[0] <= self::MAX_WIDTH) {
+                // Decoding a huge image can exhaust PHP's memory, so skip resizing those.
+        if ($size[0] * $size[1] > 12_000_000) {
             return;
         }
 
