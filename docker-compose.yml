@@ -19,8 +19,6 @@ services:
       - db
     environment:
       PMA_HOST: db
-      PMA_USER: root
-      PMA_PASSWORD: root
     ports:
       - "8080:80"
 
