@@ -6,6 +6,7 @@ use App\Entity\Conversation;
 use App\Entity\Item;
 use App\Entity\Message;
 use App\Entity\Offer;
+use App\Entity\Report;
 use App\Entity\User;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,12 +18,11 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-#[AsCommand(name: 'app:seed-demo', description: 'Create (or reset) the demo admin and client accounts with sample data')]
+#[AsCommand(name: 'app:seed-demo', description: 'Create (or reset) the demo admin, staff and client accounts with sample data')]
 class SeedDemoCommand extends Command
 {
     public const ADMIN_EMAIL = 'admin@yonzon.test';
-    public const ADMIN_PASSWORD = 'Admin@12345';
-    public const CLIENT_PASSWORD = 'Client@12345';
+    public const STAFF_EMAIL = 'staff@yonzon.test';
 
     private const CLIENTS = [
         ['maria.santos@yonzon.test', 'Maria Santos', 'Santos Camera Repair', 'Iloilo City'],
@@ -68,21 +68,37 @@ class SeedDemoCommand extends Command
 
     protected function configure(): void
     {
-        $this->addOption('admin-only', null, InputOption::VALUE_NONE, 'Only create or reset the admin account (no clients or sample data)');
+        $this->addOption('admin-only', null, InputOption::VALUE_NONE, 'Only create or reset the admin and staff accounts (no clients or sample data)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
+        if (($_SERVER['APP_ENV'] ?? $_ENV['APP_ENV'] ?? 'dev') === 'prod') {
+            $output->writeln('<error>Refusing to create demo accounts in production.</error>');
+
+            return Command::FAILURE;
+        }
+
         $rows = [];
 
-        $admin = $this->upsert(self::ADMIN_EMAIL, 'Site Admin', null, null, self::ADMIN_PASSWORD, ['ROLE_ADMIN']);
-        $rows[] = ['Admin', self::ADMIN_EMAIL, self::ADMIN_PASSWORD];
+        // Passwords are never stored in the code. Set SEED_ADMIN_PASSWORD, SEED_STAFF_PASSWORD and
+        // SEED_CLIENT_PASSWORD in .env.local to choose your own, otherwise random ones are generated
+        // and shown once in this terminal.
+        $adminPassword = $this->password('SEED_ADMIN_PASSWORD');
+        $staffPassword = $this->password('SEED_STAFF_PASSWORD');
+        $clientPassword = $this->password('SEED_CLIENT_PASSWORD');
+
+        $this->upsert(self::ADMIN_EMAIL, 'Site Admin', null, null, $adminPassword, ['ROLE_ADMIN']);
+        $rows[] = ['Admin', self::ADMIN_EMAIL, $adminPassword];
+
+        $this->upsert(self::STAFF_EMAIL, 'Sam Staff', null, null, $staffPassword, ['ROLE_STAFF']);
+        $rows[] = ['Staff', self::STAFF_EMAIL, $staffPassword];
 
         if (!$input->getOption('admin-only')) {
             $clients = [];
             foreach (self::CLIENTS as [$email, $name, $business, $city]) {
-                $clients[] = $this->upsert($email, $name, $business, $city, self::CLIENT_PASSWORD, []);
-                $rows[] = ['Client', $email, self::CLIENT_PASSWORD];
+                $clients[] = $this->upsert($email, $name, $business, $city, $clientPassword, []);
+                $rows[] = ['Client', $email, $clientPassword];
             }
             $this->em->flush();
 
@@ -93,11 +109,23 @@ class SeedDemoCommand extends Command
         $this->em->flush();
 
         $output->writeln('');
-        $output->writeln('<info>Demo accounts are ready. Log in with the email as the username:</info>');
+        $output->writeln('<info>Demo accounts are ready. Log in with the email as the username.</info>');
+        $output->writeln('<info>Passwords are shown only now. Run this command again for new ones.</info>');
         (new Table($output))->setHeaders(['Role', 'Username (email)', 'Password'])->setRows($rows)->render();
-        $output->writeln('<comment>These are demo credentials. Change or delete them before any real deployment.</comment>');
+        $output->writeln('<comment>Demo accounts only. Delete them before any real deployment.</comment>');
 
         return Command::SUCCESS;
+    }
+
+    /** A password from the environment (.env.local) if set, otherwise a fresh random one. */
+    private function password(string $envName): string
+    {
+        $value = $_SERVER[$envName] ?? $_ENV[$envName] ?? getenv($envName);
+        if (is_string($value) && strlen($value) >= 8) {
+            return $value;
+        }
+
+        return substr(strtr(base64_encode(random_bytes(12)), '+/=', 'xyz'), 0, 14);
     }
 
     private function upsert(string $email, string $name, ?string $business, ?string $city, string $password, array $roles): User
@@ -150,6 +178,8 @@ class SeedDemoCommand extends Command
             return;
         }
 
+        $this->seedReport($clients);
+
         $camera = $this->em->getRepository(Item::class)->findOneBy(['owner' => $clients[0], 'status' => Item::STATUS_FOR_SALE], ['id' => 'ASC']);
         if (!$camera) {
             return;
@@ -177,5 +207,22 @@ class SeedDemoCommand extends Command
             $message->body = $body;
             $this->em->persist($message);
         }
+    }
+
+    /** One open report so the staff report queue has something to show. */
+    private function seedReport(array $clients): void
+    {
+        $item = $this->em->getRepository(Item::class)->findOneBy(['owner' => $clients[4], 'status' => Item::STATUS_FOR_SALE]);
+        if (!$item) {
+            return;
+        }
+
+        $report = new Report();
+        $report->reporter = $clients[1];
+        $report->reportedUser = $clients[4];
+        $report->reportedItem = $item;
+        $report->itemLabel = $item->name;
+        $report->reason = 'The listing has no photo of the actual shoes, so I cannot tell if they are real.';
+        $this->em->persist($report);
     }
 }

@@ -4,9 +4,11 @@ namespace App\Twig;
 
 use App\Entity\Item;
 use App\Entity\Offer;
+use App\Entity\Report;
 use App\Entity\User;
 use App\Repository\MessageRepository;
 use App\Repository\OfferRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
 use Twig\TwigFilter;
@@ -17,16 +19,23 @@ class AppExtension extends AbstractExtension
     /** @var array{offers: int, messages: int}|null */
     private ?array $counts = null;
 
+    /** @var array{reports: int, disputes: int}|null */
+    private ?array $staffCounts = null;
+
     public function __construct(
         private Security $security,
         private OfferRepository $offers,
         private MessageRepository $messages,
+        private EntityManagerInterface $em,
     ) {
     }
 
     public function getFunctions(): array
     {
-        return [new TwigFunction('nav_counts', $this->navCounts(...))];
+        return [
+            new TwigFunction('nav_counts', $this->navCounts(...)),
+            new TwigFunction('staff_counts', $this->staffCounts(...)),
+        ];
     }
 
     public function getFilters(): array
@@ -52,6 +61,15 @@ class AppExtension extends AbstractExtension
         return $this->counts = [
             'offers' => $this->offers->countPendingForSeller($user),
             'messages' => $this->messages->countUnread($user),
+        ];
+    }
+
+    /** Open-work badges for the staff sidebar. Cached for the request. */
+    public function staffCounts(): array
+    {
+        return $this->staffCounts ??= [
+            'reports' => $this->em->getRepository(Report::class)->count(['status' => Report::OPEN]),
+            'disputes' => $this->em->getRepository(Offer::class)->count(['status' => Offer::DISPUTED]),
         ];
     }
 

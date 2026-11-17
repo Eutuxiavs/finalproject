@@ -22,11 +22,11 @@ class SecurityController extends AbstractController
         ]);
     }
 
-    /** Sends admins to the admin dashboard and everyone else to their registry. */
+    /** Sends staff and admins to the dashboard and everyone else to their registry. */
     #[Route('/after-login', name: 'app_after_login')]
     public function afterLogin(): Response
     {
-        if ($this->isGranted('ROLE_ADMIN')) {
+        if ($this->isGranted('ROLE_STAFF')) {
             return $this->redirectToRoute('app_dashboard');
         }
 

@@ -37,8 +37,8 @@
                 </nav>
 
                 <div class="topnav__user">
-                    {% if is_granted('ROLE_ADMIN') %}
-                        <a href="{{ path('app_dashboard') }}" class="topnav__admin">Admin</a>
+                    {% if is_granted('ROLE_STAFF') %}
+                        <a href="{{ path('app_dashboard') }}" class="topnav__admin">{{ is_granted('ROLE_ADMIN') ? 'Admin' : 'Staff' }}</a>
                     {% endif %}
                     <span class="topnav__name">{{ app.user.fullName }}</span>
                     <a class="btn btn--ghost btn--sm" href="{{ path('app_logout') }}">Log out</a>

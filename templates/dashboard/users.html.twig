@@ -3,6 +3,7 @@
 {% block title %}Users | Yonzon{% endblock %}
 
 {% block body %}
+{% set iAmAdmin = is_granted('ROLE_ADMIN') %}
 <div class="card shadow-sm border-0">
     <div class="card-header bg-white fw-bold">All users ({{ users|length }})</div>
     <div class="table-responsive">
@@ -21,16 +22,14 @@
             <tbody>
                 {% for user in users %}
                     {% set isMe = user.id == app.user.id %}
+                    {% set t = csrf_token('admin_user_' ~ user.id) %}
+                    {% set canModerate = not user.admin and (iAmAdmin or not user.staff) %}
                     <tr>
                         <td>{{ user.id }}</td>
                         <td>{{ user.fullName }}{% if isMe %} <small class="text-muted">(you)</small>{% endif %}</td>
                         <td>{{ user.email }}</td>
                         <td>
-                            {% if user.admin %}
-                                <span class="badge text-bg-dark">Admin</span>
-                            {% else %}
-                                <span class="badge text-bg-secondary">Client</span>
-                            {% endif %}
+                            <span class="badge text-bg-{{ user.admin ? 'dark' : (user.staff ? 'info' : 'secondary') }}">{{ user.roleLabel }}</span>
                         </td>
                         <td>
                             {% if user.suspended %}
@@ -43,15 +42,24 @@
                         <td class="text-end">
                             {% if not isMe %}
                                 <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
-                                    {% set t = csrf_token('admin_user_' ~ user.id) %}
-                                    <form method="post" action="{{ path('admin_user_action', {id: user.id, action: user.suspended ? 'unsuspend' : 'suspend'}) }}" {% if not user.suspended %}data-confirm="Suspend {{ user.fullName }}? They will not be able to log in."{% endif %}>
-                                        <input type="hidden" name="_token" value="{{ t }}">
-                                        <button class="btn btn-sm {{ user.suspended ? 'btn-outline-success' : 'btn-outline-danger' }}" type="submit">{{ user.suspended ? 'Unsuspend' : 'Suspend' }}</button>
-                                    </form>
-                                    <form method="post" action="{{ path('admin_user_action', {id: user.id, action: user.admin ? 'demote' : 'promote'}) }}" data-confirm="{{ user.admin ? 'Remove admin access from' : 'Make' }} {{ user.fullName }}{{ user.admin ? '?' : ' an admin?' }}">
-                                        <input type="hidden" name="_token" value="{{ t }}">
-                                        <button class="btn btn-sm btn-outline-secondary" type="submit">{{ user.admin ? 'Remove admin' : 'Make admin' }}</button>
-                                    </form>
+                                    {% if canModerate %}
+                                        <form method="post" action="{{ path('admin_user_action', {id: user.id, action: user.suspended ? 'unsuspend' : 'suspend'}) }}" {% if not user.suspended %}data-confirm="Suspend {{ user.fullName }}? They will not be able to log in."{% endif %}>
+                                            <input type="hidden" name="_token" value="{{ t }}">
+                                            <button class="btn btn-sm {{ user.suspended ? 'btn-outline-success' : 'btn-outline-danger' }}" type="submit">{{ user.suspended ? 'Unsuspend' : 'Suspend' }}</button>
+                                        </form>
+                                    {% endif %}
+
+                                    {% if iAmAdmin %}
+                                        {% set current = user.admin ? 'make_admin' : (user.staff ? 'make_staff' : 'make_client') %}
+                                        {% for role in [['make_client', 'Client'], ['make_staff', 'Staff'], ['make_admin', 'Admin']] %}
+                                            {% if role[0] != current %}
+                                                <form method="post" action="{{ path('admin_user_action', {id: user.id, action: role[0]}) }}" data-confirm="Make {{ user.fullName }} a {{ role[1]|lower }}?">
+                                                    <input type="hidden" name="_token" value="{{ t }}">
+                                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Make {{ role[1]|lower }}</button>
+                                                </form>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
                                 </div>
                             {% endif %}
                         </td>

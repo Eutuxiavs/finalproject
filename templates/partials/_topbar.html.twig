@@ -12,6 +12,7 @@
                href="#" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle fs-4 me-2"></i>
                 <span class="d-none d-md-inline">{{ app.user ? app.user.fullName : 'Guest' }}</span>
+                {% if app.user %}<span class="badge text-bg-{{ is_granted('ROLE_ADMIN') ? 'dark' : 'info' }} ms-2">{{ app.user.roleLabel }}</span>{% endif %}
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
                 {% if app.user %}

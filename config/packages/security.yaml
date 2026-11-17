@@ -3,7 +3,8 @@ security:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
     role_hierarchy:
-        ROLE_ADMIN: ROLE_USER
+        ROLE_STAFF: ROLE_USER
+        ROLE_ADMIN: ROLE_STAFF
 
     providers:
         app_user_provider:
@@ -33,7 +34,7 @@ security:
                 target: app_home
 
     access_control:
-        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/admin, roles: ROLE_STAFF }
         - { path: ^/(after-login|registry|marketplace|offers|profile|messages|u/), roles: ROLE_USER }
 
 when@test:

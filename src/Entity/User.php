@@ -171,7 +171,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         return in_array('ROLE_ADMIN', $this->roles, true);
     }
+        public function isStaff(): bool
+    {
+        return in_array('ROLE_STAFF', $this->roles, true);
+    }
 
+    public function getRoleLabel(): string
+    {
+        return $this->isAdmin() ? 'Admin' : ($this->isStaff() ? 'Staff' : 'Client');
+    }
     public function getCreatedAt(): \DateTimeImmutable
     {
         return $this->createdAt;

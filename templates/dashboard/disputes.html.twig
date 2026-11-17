@@ -1,0 +1,42 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Disputes | Yonzon{% endblock %}
+
+{% block body %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-bold">Disputed deals ({{ offers|length }})</div>
+
+    {% if offers is empty %}
+        <p class="text-center text-muted py-5 mb-0">No disputed deals. Everything is running smoothly.</p>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr><th>Item</th><th>Seller</th><th>Buyer</th><th>Deal</th><th>Date</th><th class="text-end">Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for offer in offers %}
+                        <tr>
+                            <td><strong>{{ offer.item.name }}</strong><br><small class="text-muted">{{ offer.item.claimId }}</small></td>
+                            <td><a href="{{ path('profile_public', {id: offer.seller.id}) }}">{{ offer.seller.fullName }}</a></td>
+                            <td><a href="{{ path('profile_public', {id: offer.buyer.id}) }}">{{ offer.buyer.fullName }}</a></td>
+                            <td>
+                                {% if offer.type == 'cash' %}${{ offer.amount|number_format(2) }}
+                                {% elseif offer.type == 'trade' %}Trade for {{ offer.tradeItem ? offer.tradeItem.name : 'removed item' }}
+                                {% else %}${{ offer.amount|number_format(2) }} + {{ offer.tradeItem ? offer.tradeItem.name : 'removed item' }}{% endif %}
+                            </td>
+                            <td>{{ offer.createdAt|date('d M Y') }}</td>
+                            <td class="text-end">
+                                <form method="post" action="{{ path('admin_dispute_resolve', {id: offer.id}) }}" data-confirm="Mark this dispute as resolved?">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('admin_dispute_' ~ offer.id) }}">
+                                    <button class="btn btn-sm btn-outline-success" type="submit">Mark resolved</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

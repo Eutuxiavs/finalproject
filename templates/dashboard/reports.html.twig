@@ -41,7 +41,7 @@
                                                 <button class="btn btn-sm btn-outline-danger" type="submit">Remove listing</button>
                                             </form>
                                         {% endif %}
-                                        {% if report.reportedUser and not report.reportedUser.suspended and not report.reportedUser.admin %}
+                                        {% if report.reportedUser and not report.reportedUser.suspended and not report.reportedUser.admin and (is_granted('ROLE_ADMIN') or not report.reportedUser.staff) %}
                                             <form method="post" action="{{ path('admin_report_action', {id: report.id, action: 'suspend_user'}) }}" data-confirm="Suspend this user?">
                                                 <input type="hidden" name="_token" value="{{ t }}">
                                                 <button class="btn btn-sm btn-outline-danger" type="submit">Suspend user</button>

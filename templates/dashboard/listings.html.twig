@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Listings | Yonzon{% endblock %}
+
+{% block body %}
+<div class="card shadow-sm border-0">
+    <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <span class="fw-bold">Marketplace listings ({{ items|length }})</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Filter listings">
+            <a class="btn btn-outline-secondary {{ filter == 'all' ? 'active' }}" href="{{ path('app_listings') }}">All</a>
+            <a class="btn btn-outline-secondary {{ filter == 'for_sale' ? 'active' }}" href="{{ path('app_listings', {status: 'for_sale'}) }}">For sale</a>
+            <a class="btn btn-outline-secondary {{ filter == 'reserved' ? 'active' }}" href="{{ path('app_listings', {status: 'reserved'}) }}">Reserved</a>
+            <a class="btn btn-outline-secondary {{ filter == 'lost' ? 'active' }}" href="{{ path('app_listings', {status: 'lost'}) }}">Lost</a>
+        </div>
+    </div>
+
+    {% if items is empty %}
+        <p class="text-center text-muted py-5 mb-0">No listings match this filter.</p>
+    {% else %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr><th>Item</th><th>Owner</th><th>Status</th><th>Price</th><th>Listed</th><th class="text-end">Actions</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in items %}
+                        <tr>
+                            <td>
+                                <strong>{{ item.name }}</strong><br>
+                                <small class="text-muted">{{ item.claimId }}{% if not item.photo %} · no photo{% endif %}</small>
+                            </td>
+                            <td><a href="{{ path('profile_public', {id: item.owner.id}) }}">{{ item.owner.fullName }}</a></td>
+                            <td><span class="badge text-bg-{{ item.status == 'for_sale' ? 'warning' : (item.status == 'lost' ? 'danger' : 'info') }}">{{ item.status|status_label }}</span></td>
+                            <td>{{ item.price ? '$' ~ item.price|number_format(2) : '—' }}</td>
+                            <td>{{ item.createdAt|date('d M Y') }}</td>
+                            <td class="text-end">
+                                <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
+                                    <a class="btn btn-sm btn-outline-secondary" href="{{ path('listing_show', {id: item.id}) }}">View</a>
+                                    <form method="post" action="{{ path('admin_listing_remove', {id: item.id}) }}" data-confirm="Remove &quot;{{ item.name }}&quot; from the marketplace? Any open offers will be cancelled.">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('admin_listing_' ~ item.id) }}">
+                                        <button class="btn btn-sm btn-outline-danger" type="submit">Remove</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
